@@ -13,16 +13,21 @@ setup("create test database", async ({}) => {
   // 1. Get the root directory path
   const rootDir = process.cwd()
 
+  const isCI =
+    process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
+
   // 3. Start the test database using docker-compose.test.yml
-  console.log("Starting test database container...")
-  try {
-    await execAsync("docker-compose -f docker-compose.test.yml up -d", {
-      cwd: rootDir,
-    })
-    console.log("Test database container started successfully")
-  } catch (error) {
-    console.error("Failed to start test database container:", error)
-    throw error
+  if (!isCI) {
+    console.log("Starting test database container...")
+    try {
+      await execAsync("docker-compose -f docker-compose.test.yml up -d", {
+        cwd: rootDir,
+      })
+      console.log("Test database container started successfully")
+    } catch (error) {
+      console.error("Failed to start test database container:", error)
+      throw error
+    }
   }
 
   // 4. Run Prisma DB push to sync the schema
