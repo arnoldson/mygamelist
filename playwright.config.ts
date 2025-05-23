@@ -28,7 +28,11 @@ const config: PlaywrightTestConfig = {
   workers: process.env.CI ? 1 : undefined,
 
   // Reporter to use
-  reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  reporter: [
+    ["html", { outputFolder: "playwright-report" }],
+    ["list"],
+    ["github"],
+  ],
 
   // Shared settings for all the projects below
   use: {
