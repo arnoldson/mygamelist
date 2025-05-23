@@ -31,7 +31,7 @@ setup("create test database", async ({}) => {
     // Give the database a moment to fully initialize
     await new Promise((resolve) => setTimeout(resolve, 3000))
 
-    await execAsync("npx prisma db push", { cwd: rootDir })
+    await execAsync("npm run db:setup", { cwd: rootDir })
     console.log("Database schema synced successfully")
   } catch (error) {
     console.error("Failed to sync database schema:", error)
