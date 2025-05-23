@@ -3,13 +3,11 @@
 import { FullConfig } from "@playwright/test"
 import { exec } from "child_process"
 import { promisify } from "util"
-import * as dotenv from "dotenv"
-import * as path from "path"
-import * as fs from "fs"
+import { test as setup } from "@playwright/test"
 
 const execAsync = promisify(exec)
 
-async function globalSetup(config: FullConfig) {
+setup("create test database", async ({}) => {
   console.log("Starting test database setup...")
 
   // 1. Get the root directory path
@@ -41,6 +39,4 @@ async function globalSetup(config: FullConfig) {
   }
 
   console.log("Global setup completed successfully")
-}
-
-export default globalSetup
+})

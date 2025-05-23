@@ -58,8 +58,13 @@ const config: PlaywrightTestConfig = {
   // Configure projects for major browsers
   projects: [
     {
+      name: "setup db",
+      testMatch: /global-setup\.ts/,
+    },
+    {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup db"],
     },
     // {
     //   name: "firefox",
@@ -80,7 +85,7 @@ const config: PlaywrightTestConfig = {
     // },
   ],
 
-  globalSetup: path.resolve(testDir, "./global-setup.ts"),
+  // globalSetup: path.resolve(testDir, "./global-setup.ts"),
   // globalTeardown: path.resolve(testDir, "./global-teardown.ts"),
 }
 
