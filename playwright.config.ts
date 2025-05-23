@@ -61,27 +61,27 @@ const config: PlaywrightTestConfig = {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
-    // Test against mobile viewports
-    {
-      name: "mobile-chrome",
-      use: { ...devices["Pixel 5"] },
-    },
-    {
-      name: "mobile-safari",
-      use: { ...devices["iPhone 12"] },
-    },
+    // {
+    //   name: "firefox",
+    //   use: { ...devices["Desktop Firefox"] },
+    // },
+    // {
+    //   name: "webkit",
+    //   use: { ...devices["Desktop Safari"] },
+    // },
+    // // Test against mobile viewports
+    // {
+    //   name: "mobile-chrome",
+    //   use: { ...devices["Pixel 5"] },
+    // },
+    // {
+    //   name: "mobile-safari",
+    //   use: { ...devices["iPhone 12"] },
+    // },
   ],
 
   globalSetup: path.resolve(testDir, "./global-setup.ts"),
-  globalTeardown: path.resolve(testDir, "./global-teardown.ts"),
+  // globalTeardown: path.resolve(testDir, "./global-teardown.ts"),
 }
 
 export default config

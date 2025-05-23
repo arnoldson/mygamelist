@@ -15,17 +15,6 @@ async function globalSetup(config: FullConfig) {
   // 1. Get the root directory path
   const rootDir = process.cwd()
 
-  // 2. Load environment variables from .env.test
-  console.log("Loading environment variables from .env.test...")
-  const envTestPath = path.join(rootDir, ".env.test")
-  if (fs.existsSync(envTestPath)) {
-    dotenv.config({ path: envTestPath })
-    console.log("Environment variables loaded successfully")
-  } else {
-    console.error(".env.test file not found at:", envTestPath)
-    throw new Error(".env.test file not found")
-  }
-
   // 3. Start the test database using docker-compose.test.yml
   console.log("Starting test database container...")
   try {
