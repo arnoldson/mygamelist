@@ -13,6 +13,7 @@
 # testing
 /coverage
 /playwright-report
+docker-compose.test.yml
 
 # next.js
 /.next/
