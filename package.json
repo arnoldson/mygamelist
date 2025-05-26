@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:ci": "playwright test",
     "test": "dotenv -e .env.test -- playwright test",
     "dev": "next dev --turbopack",
     "build": "next build",
