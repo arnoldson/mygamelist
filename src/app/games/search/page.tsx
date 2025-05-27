@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
-import Image from "next/image"
-import { Search, Star, Calendar, GamepadIcon, Loader2 } from "lucide-react"
+import { useState, useCallback } from "react"
+import { Search, GamepadIcon, Loader2 } from "lucide-react"
 
 // Import types from your types file
 import type { Game, RAWGSearchResponse } from "@/types/game"
@@ -18,7 +17,7 @@ export default function GamesSearchPage() {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [totalCount, setTotalCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(-1)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
 
@@ -78,22 +77,6 @@ export default function GamesSearchPage() {
     if (hasMore && !loading) {
       searchGames(query, page + 1)
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "TBA"
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  const getPlatformNames = (platforms: Game["platforms"]) => {
-    return platforms
-      .slice(0, 3)
-      .map((p) => p.platform.name)
-      .join(", ")
   }
 
   return (
@@ -185,7 +168,7 @@ export default function GamesSearchPage() {
         )}
 
         {/* Empty State */}
-        {!loading && games.length === 0 && query && !error && (
+        {!loading && totalCount === 0 && query && !error && (
           <div className="text-center py-12">
             <GamepadIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-300 mb-2">
