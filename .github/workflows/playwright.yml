@@ -44,6 +44,7 @@ jobs:
       - name: Run Playwright tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RAWG_API_KEY: ${{ secrets.RAWG_API_KEY }}
         run: npm run test:ci
 
       - uses: actions/upload-artifact@v4
