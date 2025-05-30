@@ -3,16 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test:ci": "playwright test",
-    "test": "dotenv -e .env.test -- playwright test",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset --force",
-    "db:push": "prisma db push",
-    "db:setup": "prisma db push && prisma db seed"
+    "db:setup:test": "bash scripts/setup-test-db.sh",
+    "db:teardown:test": "bash scripts/teardown-test-db.sh",
+    "test:playwright": "DATABASE_URL='postgresql://postgres:postgres@localhost:5433/mygamelist_test' playwright test",
+    "test": "npm run db:setup:test && npm run test:playwright && npm run db:teardown:test",
+    "test:ci": "npm run db:setup:test && npm run test:playwright"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

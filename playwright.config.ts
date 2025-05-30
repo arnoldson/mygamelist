@@ -62,13 +62,8 @@ const config: PlaywrightTestConfig = {
   // Configure projects for major browsers
   projects: [
     {
-      name: "setup db",
-      testMatch: /global-setup\.ts/,
-    },
-    {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      dependencies: ["setup db"],
     },
     // {
     //   name: "firefox",
