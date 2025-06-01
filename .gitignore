@@ -14,7 +14,7 @@
 /coverage
 /playwright-report
 /test-results
-docker-compose.test.yml
+docker-compose*
 
 # next.js
 /.next/
