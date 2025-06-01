@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   password      String?
   accounts      Account[]
   sessions      Session[]
+  gameLists     GameList[]
 }
 
 model Account {
@@ -43,4 +44,44 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum GameListType {
+  PLAYING
+  PLAN_TO_PLAY
+  COMPLETED
+  ON_HOLD
+  DROPPED
+}
+
+model GameList {
+  id          String       @id @default(cuid())
+  userId      String
+  type        GameListType
+  name        String?      // Optional custom name for the list
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  gameEntries GameEntry[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model GameEntry {
+  id          String    @id @default(cuid())
+  gameListId  String
+  rawgGameId  Int       // RAWG API game ID
+  rating      Int?      @db.SmallInt // 1-10 rating scale
+  review      String?
+  hoursPlayed Int?      @default(0)
+  startedAt   DateTime?
+  completedAt DateTime?
+  addedAt     DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  gameList GameList @relation(fields: [gameListId], references: [id], onDelete: Cascade)
+
+  @@unique([gameListId, rawgGameId])
 }
