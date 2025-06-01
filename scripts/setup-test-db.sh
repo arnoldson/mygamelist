@@ -7,6 +7,7 @@ echo "🧪 Setting up test database..."
 
 # Configuration with defaults
 COMPOSE_FILE="docker-compose.test.yml"
+PROJECT_NAME="mygamelist_test"
 
 MAX_RETRIES=${MAX_RETRIES:-30}
 RETRY_INTERVAL=${RETRY_INTERVAL:-2}
@@ -24,7 +25,7 @@ wait_for_db() {
     
     while [ $retries -lt $MAX_RETRIES ]; do
         # Just check if postgres service is accepting connections (any database)
-        if docker-compose -f $COMPOSE_FILE exec -T postgres pg_isready > /dev/null 2>&1; then
+        if docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME exec -T postgres pg_isready > /dev/null 2>&1; then
             echo "✅ Database is ready!"
             return 0
         fi
@@ -40,7 +41,7 @@ wait_for_db() {
 
 # Function to check if container is already running
 is_container_running() {
-    docker-compose -f $COMPOSE_FILE ps postgres | grep -q "Up"
+    docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME ps postgres | grep -q "Up"
 }
 
 # Main setup logic
@@ -54,12 +55,12 @@ main() {
             echo "📋 Test database container already running"
         else
             # Start the container
-            docker-compose -f $COMPOSE_FILE up -d postgres
+            docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d postgres
             
             # Wait for it to be ready
             if ! wait_for_db; then
                 echo "❌ Failed to start test database"
-                docker-compose -f $COMPOSE_FILE logs postgres
+                docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME logs postgres
                 exit 1
             fi
         fi
@@ -95,7 +96,7 @@ cleanup() {
     local exit_code=$?
     if [ $exit_code -ne 0 ] && [ "$IS_CI" != "true" ]; then
         echo "🧹 Setup failed, showing logs..."
-        docker-compose -f $COMPOSE_FILE logs postgres
+        docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME logs postgres
     fi
     exit $exit_code
 }
