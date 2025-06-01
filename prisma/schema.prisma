@@ -58,10 +58,6 @@ model GameList {
   id          String       @id @default(cuid())
   userId      String
   type        GameListType
-  name        String?      // Optional custom name for the list
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
   gameEntries GameEntry[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
