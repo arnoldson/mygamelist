@@ -11,11 +11,9 @@ export const TEST_USER = {
   password: "password123", // Plain text password for tests
 } as const
 
-async function main() {
-  console.log("🌱 Starting database seed...")
-
+async function seedTestUser() {
   // Clear existing data (be careful with this in production!)
-  console.log("🧹 Cleaning existing data...")
+  console.log("🧹 Cleaning existing user data from session, account, user...")
   await prisma.session.deleteMany()
   await prisma.account.deleteMany()
   await prisma.user.deleteMany()
@@ -35,9 +33,15 @@ async function main() {
     },
   })
 
-  console.log("✅ Database seeded successfully!")
   console.log("📊 Created user:")
   console.log(`   • ${testUser.email} (password: ${TEST_USER.password})`)
+}
+
+async function main() {
+  console.log("🌱 Starting database seed...")
+
+  await seedTestUser()
+  console.log("✅ Database seeded successfully!")
 }
 
 // Only run the seed function if this file is executed directly
