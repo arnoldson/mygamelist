@@ -15,7 +15,6 @@ export async function POST(request: Request) {
 
     // Validate inputs
     if (!username || !email || !password) {
-      console.error("Missing required fields:", body)
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -23,13 +22,23 @@ export async function POST(request: Request) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findUnique({
       where: { email },
     })
 
-    if (existingUser) {
+    if (existingEmail) {
       return NextResponse.json(
         { message: "User with this email already exists" },
+        { status: 400 }
+      )
+    }
+
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    })
+    if (existingUsername) {
+      return NextResponse.json(
+        { message: "Username already taken" },
         { status: 400 }
       )
     }
