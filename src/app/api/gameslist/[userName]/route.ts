@@ -92,6 +92,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Define the game entry selection with title included
+    const gameEntrySelect = {
+      id: true,
+      rawgGameId: true,
+      title: true,
+      rating: true,
+      review: true,
+      hoursPlayed: true,
+      startedAt: true,
+      completedAt: true,
+      addedAt: true,
+      updatedAt: true,
+    }
+
     // Get the game list(s) for the user
     if (status) {
       // Single list requested
@@ -105,17 +119,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         include: {
           gameEntries: {
             orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
-            select: {
-              id: true,
-              rawgGameId: true,
-              rating: true,
-              review: true,
-              hoursPlayed: true,
-              startedAt: true,
-              completedAt: true,
-              addedAt: true,
-              updatedAt: true,
-            },
+            select: gameEntrySelect,
           },
         },
       })
@@ -158,7 +162,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       return NextResponse.json({
         user: {
-          name: user.name,
+          username: user.username,
           image: user.image,
         },
         gameList: {
@@ -184,17 +188,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         include: {
           gameEntries: {
             orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
-            select: {
-              id: true,
-              rawgGameId: true,
-              rating: true,
-              review: true,
-              hoursPlayed: true,
-              startedAt: true,
-              completedAt: true,
-              addedAt: true,
-              updatedAt: true,
-            },
+            select: gameEntrySelect,
           },
         },
         orderBy: {
@@ -254,7 +248,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       return NextResponse.json({
         user: {
-          name: user.name,
+          username: user.username,
           image: user.image,
         },
         gameLists: orderedGameLists,
