@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import prisma from "@/lib/prisma"
 
 interface RequestBody {
-  name: string
+  username: string
   email: string
   password: string
 }
@@ -11,10 +11,11 @@ interface RequestBody {
 export async function POST(request: Request) {
   try {
     const body: RequestBody = await request.json()
-    const { name, email, password } = body
+    const { username, email, password } = body
 
     // Validate inputs
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
+      console.error("Missing required fields:", body)
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     // Create the user
     const user = await prisma.user.create({
       data: {
-        name,
+        username: username,
         email,
         password: hashedPassword,
       },

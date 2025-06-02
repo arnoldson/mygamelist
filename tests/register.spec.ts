@@ -13,10 +13,10 @@ test.describe("User Registration", () => {
     const timestamp = Date.now()
     const testEmail = `test.user.${timestamp}@example.com`
     const testPassword = "SecurePassword123!"
-    const testName = "John Doe"
+    const testUsername = "johndoe"
 
     // Fill out the registration form using ID selectors
-    await page.fill("#name", testName)
+    await page.fill("#username", testUsername)
     await page.fill("#email", testEmail)
     await page.fill("#password", testPassword)
 

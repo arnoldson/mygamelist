@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 
 // Export test user data for use in tests
 export const TEST_USER = {
-  name: "Test User",
+  username: "testuser",
   email: "test@example.com",
   password: "password123", // Plain text password for tests
 } as const
