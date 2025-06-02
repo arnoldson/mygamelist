@@ -68,14 +68,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Find user by username (case-insensitive)
     const user = await prisma.user.findFirst({
       where: {
-        name: {
+        username: {
           equals: userName,
           mode: "insensitive",
         },
       },
       select: {
         id: true,
-        name: true,
+        username: true,
         image: true,
       },
     })
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       if (!gameList) {
         return NextResponse.json({
           user: {
-            name: user.name,
+            username: user.username,
             image: user.image,
           },
           gameList: {
