@@ -69,6 +69,7 @@ model GameEntry {
   id          String    @id @default(cuid())
   gameListId  String
   rawgGameId  Int       // RAWG API game ID
+  title       String
   rating      Int?      @db.SmallInt // 1-10 rating scale
   review      String?
   hoursPlayed Int?      @default(0)
