@@ -14,6 +14,7 @@ const STATUS_MAP = {
 } as const
 
 type StatusKey = keyof typeof STATUS_MAP
+type GameListType = (typeof STATUS_MAP)[StatusKey]
 
 interface RouteParams {
   params: {
@@ -106,26 +107,73 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       updatedAt: true,
     }
 
-    // Get the game list(s) for the user
-    if (status) {
-      // Single list requested
-      const gameList = await prisma.gameList.findUnique({
-        where: {
-          userId_type: {
-            userId: user.id,
-            type: gameListType!,
-          },
+    // ALWAYS fetch ALL game lists to calculate complete metadata
+    const allGameLists = await prisma.gameList.findMany({
+      where: {
+        userId: user.id,
+      },
+      include: {
+        gameEntries: {
+          orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
+          select: gameEntrySelect,
         },
-        include: {
-          gameEntries: {
-            orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
-            select: gameEntrySelect,
-          },
-        },
-      })
+      },
+      orderBy: {
+        type: "asc",
+      },
+    })
 
-      // If no game list exists for this type, return empty list
-      if (!gameList) {
+    // Calculate complete metadata for ALL games
+    const allEntries = allGameLists.flatMap((list) => list.gameEntries)
+    const totalGames = allEntries.length
+    const totalHours = allEntries.reduce(
+      (sum, entry) => sum + (entry.hoursPlayed || 0),
+      0
+    )
+    const ratingsWithValues = allEntries
+      .map((entry) => entry.rating)
+      .filter((rating): rating is number => rating !== null)
+
+    const averageRating =
+      ratingsWithValues.length > 0
+        ? ratingsWithValues.reduce((sum, rating) => sum + rating, 0) /
+          ratingsWithValues.length
+        : null
+
+    // Create a map of all game lists for easy access
+    const gameListsMap = new Map(allGameLists.map((list) => [list.type, list]))
+
+    // Calculate counts for each status (always include all statuses)
+    const statusOrder: GameListType[] = [
+      "PLAYING",
+      "PLAN_TO_PLAY",
+      "COMPLETED",
+      "ON_HOLD",
+      "DROPPED",
+    ]
+
+    const listCounts = statusOrder.reduce((acc, listType) => {
+      const gameList = gameListsMap.get(listType)
+      acc[listType] = gameList?.gameEntries.length || 0
+      return acc
+    }, {} as Record<GameListType, number>)
+
+    // Build complete metadata object (used in both single and all list responses)
+    const completeMetadata = {
+      totalGames,
+      totalHours,
+      averageRating: averageRating
+        ? parseFloat(averageRating.toFixed(1))
+        : null,
+      listCounts,
+    }
+
+    // Handle single status request
+    if (status) {
+      const requestedGameList = gameListsMap.get(gameListType!)
+
+      // If no game list exists for this type, return empty list with complete metadata
+      if (!requestedGameList) {
         return NextResponse.json({
           user: {
             username: user.username,
@@ -136,29 +184,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             status: parseInt(status),
             gameEntries: [],
           },
-          meta: {
-            totalGames: 0,
-            totalHours: 0,
-            averageRating: null,
-          },
+          meta: completeMetadata,
         })
       }
-
-      // Calculate metadata for single list
-      const totalGames = gameList.gameEntries.length
-      const totalHours = gameList.gameEntries.reduce(
-        (sum, entry) => sum + (entry.hoursPlayed || 0),
-        0
-      )
-      const ratingsWithValues = gameList.gameEntries
-        .map((entry) => entry.rating)
-        .filter((rating): rating is number => rating !== null)
-
-      const averageRating =
-        ratingsWithValues.length > 0
-          ? ratingsWithValues.reduce((sum, rating) => sum + rating, 0) /
-            ratingsWithValues.length
-          : null
 
       return NextResponse.json({
         user: {
@@ -166,50 +194,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           image: user.image,
         },
         gameList: {
-          id: gameList.id,
-          type: gameList.type,
+          id: requestedGameList.id,
+          type: requestedGameList.type,
           status: parseInt(status),
-          gameEntries: gameList.gameEntries,
+          gameEntries: requestedGameList.gameEntries,
         },
-        meta: {
-          totalGames,
-          totalHours,
-          averageRating: averageRating
-            ? parseFloat(averageRating.toFixed(1))
-            : null,
-        },
+        meta: completeMetadata,
       })
     } else {
-      // All lists requested - sorted by status
-      const allGameLists = await prisma.gameList.findMany({
-        where: {
-          userId: user.id,
-        },
-        include: {
-          gameEntries: {
-            orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
-            select: gameEntrySelect,
-          },
-        },
-        orderBy: {
-          type: "asc", // This will sort: COMPLETED, DROPPED, ON_HOLD, PLAN_TO_PLAY, PLAYING
-        },
-      })
-
-      // Create a map to ensure all status types are represented
-      const statusOrder = [
-        "PLAYING",
-        "PLAN_TO_PLAY",
-        "COMPLETED",
-        "ON_HOLD",
-        "DROPPED",
-      ] as const
-      const gameListsMap = new Map(
-        allGameLists.map((list) => [list.type, list])
-      )
-
-      // Build ordered game lists with status numbers
-      const orderedGameLists = statusOrder.map((type, index) => {
+      // Handle all lists request
+      // Build ordered game lists with status numbers (ensure all statuses are represented)
+      const orderedGameLists = statusOrder.map((type) => {
         const gameList = gameListsMap.get(type)
         const statusNumber = Object.keys(STATUS_MAP).find(
           (key) => STATUS_MAP[key as StatusKey] === type
@@ -223,43 +218,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       })
 
-      // Calculate overall metadata
-      const allEntries = allGameLists.flatMap((list) => list.gameEntries)
-      const totalGames = allEntries.length
-      const totalHours = allEntries.reduce(
-        (sum, entry) => sum + (entry.hoursPlayed || 0),
-        0
-      )
-      const ratingsWithValues = allEntries
-        .map((entry) => entry.rating)
-        .filter((rating): rating is number => rating !== null)
-
-      const averageRating =
-        ratingsWithValues.length > 0
-          ? ratingsWithValues.reduce((sum, rating) => sum + rating, 0) /
-            ratingsWithValues.length
-          : null
-
-      // Calculate per-list counts
-      const listCounts = orderedGameLists.reduce((acc, list) => {
-        acc[list.type] = list.gameEntries.length
-        return acc
-      }, {} as Record<string, number>)
-
       return NextResponse.json({
         user: {
           username: user.username,
           image: user.image,
         },
         gameLists: orderedGameLists,
-        meta: {
-          totalGames,
-          totalHours,
-          averageRating: averageRating
-            ? parseFloat(averageRating.toFixed(1))
-            : null,
-          listCounts,
-        },
+        meta: completeMetadata,
       })
     }
   } catch (error) {
