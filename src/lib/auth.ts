@@ -54,9 +54,29 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.sub as string
+    // Step 1: When creating JWT, fetch and include username
+    jwt: async ({ token, user }) => {
+      // On sign in, fetch full user data
+      if (user?.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { id: true, username: true, email: true, image: true },
+        })
+
+        if (dbUser) {
+          token.username = dbUser.username
+          token.id = dbUser.id
+        }
+      }
+
+      return token
+    },
+
+    // Step 2: When creating session, include username from JWT
+    session: async ({ session, token }) => {
+      if (token) {
+        session.user.id = token.id as string
+        session.user.username = token.username as string
       }
       return session
     },
