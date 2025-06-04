@@ -5,8 +5,17 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { STATUS_CONFIG } from "./page"
-import { Star, Clock, Calendar, MessageSquare, User } from "lucide-react"
+import {
+  Star,
+  Clock,
+  Calendar,
+  MessageSquare,
+  User,
+  Trash2,
+  X,
+} from "lucide-react"
 import GamesListSkeleton from "./GamesListSkeleton"
+import { useSession } from "next-auth/react"
 
 interface GameEntry {
   id: string
@@ -48,6 +57,96 @@ interface GamesListContentProps {
   status?: string
 }
 
+interface DeleteModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  gameTitle: string
+  isDeleting: boolean
+}
+
+function DeleteConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  gameTitle,
+  isDeleting,
+}: DeleteModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">Delete Game</h3>
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Are you sure you want to delete this game?
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <p className="font-medium text-gray-900">{gameTitle}</p>
+          </div>
+
+          <p className="text-sm text-gray-600">
+            This will permanently remove the game from your library, including
+            all ratings, reviews, and progress data.
+          </p>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Game</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function GamesListContent({
   userName,
   status,
@@ -55,8 +154,21 @@ export default function GamesListContent({
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean
+    gameEntry: GameEntry | null
+    isDeleting: boolean
+  }>({
+    isOpen: false,
+    gameEntry: null,
+    isDeleting: false,
+  })
 
   const router = useRouter()
+  const { data: session } = useSession()
+
+  // Check if current user can delete entries (owns this profile)
+  const canDelete = session?.user?.username === userName
 
   // Fetch games list data from internal API
   useEffect(() => {
@@ -68,9 +180,6 @@ export default function GamesListContent({
         const url = status
           ? `/api/gameslist/${encodeURIComponent(userName)}?status=${status}`
           : `/api/gameslist/${encodeURIComponent(userName)}`
-
-        console.log("Fetching games list from:", url)
-        console.log("Status filter:", status)
 
         const response = await fetch(url)
 
@@ -96,6 +205,116 @@ export default function GamesListContent({
 
     fetchData()
   }, [userName, status])
+
+  // Handle delete game entry
+  const handleDeleteGame = async (gameEntry: GameEntry) => {
+    setDeleteModal({
+      isOpen: true,
+      gameEntry,
+      isDeleting: false,
+    })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.gameEntry) return
+
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }))
+
+    try {
+      const response = await fetch(
+        `/api/gameslist/entries/${deleteModal.gameEntry.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      console.log("Error response: ", response)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error?.message || "Failed to delete game")
+      }
+
+      const result = await response.json()
+
+      // Show success message (you can replace this with a toast notification)
+      console.log(result.message)
+
+      // Update the local state to remove the deleted entry
+      setData((prevData) => {
+        if (!prevData) return prevData
+
+        // Update the data by removing the deleted entry
+        const updatedData = { ...prevData }
+
+        if (updatedData.gameList) {
+          // Single list view
+          updatedData.gameList.gameEntries =
+            updatedData.gameList.gameEntries.filter(
+              (entry) => entry.id !== deleteModal.gameEntry!.id
+            )
+        }
+
+        if (updatedData.gameLists) {
+          // Multiple lists view
+          updatedData.gameLists = updatedData.gameLists.map((gameList) => ({
+            ...gameList,
+            gameEntries: gameList.gameEntries.filter(
+              (entry) => entry.id !== deleteModal.gameEntry!.id
+            ),
+          }))
+        }
+
+        // Update metadata
+        updatedData.meta = {
+          ...updatedData.meta,
+          totalGames: updatedData.meta.totalGames - 1,
+          totalHours:
+            updatedData.meta.totalHours -
+            (deleteModal.gameEntry!.hoursPlayed || 0),
+        }
+
+        // Update list counts if available
+        if (updatedData.meta.listCounts) {
+          const deletedEntryListType = Object.entries(STATUS_CONFIG).find(
+            ([_, config]) => config.status === status
+          )?.[1]?.type
+
+          if (
+            deletedEntryListType &&
+            updatedData.meta.listCounts[deletedEntryListType] > 0
+          ) {
+            updatedData.meta.listCounts[deletedEntryListType] -= 1
+          }
+        }
+
+        return updatedData
+      })
+
+      // Close the modal
+      setDeleteModal({
+        isOpen: false,
+        gameEntry: null,
+        isDeleting: false,
+      })
+    } catch (err) {
+      console.error("Error deleting game:", err)
+      alert(err instanceof Error ? err.message : "Failed to delete game")
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }))
+    }
+  }
+
+  const closeDeleteModal = () => {
+    if (deleteModal.isDeleting) return // Prevent closing while deleting
+    setDeleteModal({
+      isOpen: false,
+      gameEntry: null,
+      isDeleting: false,
+    })
+  }
 
   // Handle status filter change
   const handleStatusChange = (newStatus?: string) => {
@@ -304,11 +523,25 @@ export default function GamesListContent({
                   {gameList.gameEntries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200"
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group"
                     >
+                      {/* Delete Button (only show for owner) */}
+                      {canDelete && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteGame(entry)
+                          }}
+                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 z-10"
+                          title="Delete game"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+
                       {/* Game Header */}
                       <div className="mb-3">
-                        <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2">
+                        <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2 pr-12">
                           {entry.title}
                         </h3>
                       </div>
@@ -406,6 +639,15 @@ export default function GamesListContent({
           </button>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        gameTitle={deleteModal.gameEntry?.title || ""}
+        isDeleting={deleteModal.isDeleting}
+      />
     </div>
   )
 }
