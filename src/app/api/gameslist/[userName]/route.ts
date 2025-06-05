@@ -1,20 +1,22 @@
 // app/api/gameslist/[userName]/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { GameListType } from "@/types/enums"
 
 const prisma = new PrismaClient()
 
-// Map status numbers to GameListType enum
+// Reverse mapping from enum values to names for validation
 const STATUS_MAP = {
-  "1": "PLAYING",
-  "2": "PLAN_TO_PLAY",
-  "3": "COMPLETED",
-  "4": "ON_HOLD",
-  "5": "DROPPED",
+  1: GameListType.PLAYING,
+  2: GameListType.PLAN_TO_PLAY,
+  3: GameListType.COMPLETED,
+  4: GameListType.ON_HOLD,
+  5: GameListType.DROPPED,
 } as const
 
 type StatusKey = keyof typeof STATUS_MAP
-type GameListType = (typeof STATUS_MAP)[StatusKey]
 
 interface RouteParams {
   params: {
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Validate status parameter if provided
-    if (status && !STATUS_MAP[status as StatusKey]) {
+    if (status && !STATUS_MAP[parseInt(status) as StatusKey]) {
       return NextResponse.json(
         {
           error: {
@@ -64,7 +66,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const gameListType = status ? STATUS_MAP[status as StatusKey] : null
+    const gameListType = status
+      ? STATUS_MAP[parseInt(status) as StatusKey]
+      : null
 
     // Find user by username (case-insensitive)
     const user = await prisma.user.findFirst({
@@ -93,11 +97,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Define the game entry selection with title included
+    // Define the game entry selection
     const gameEntrySelect = {
       id: true,
       rawgGameId: true,
       title: true,
+      status: true,
       rating: true,
       review: true,
       hoursPlayed: true,
@@ -107,30 +112,41 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       updatedAt: true,
     }
 
-    // ALWAYS fetch ALL game lists to calculate complete metadata
-    const allGameLists = await prisma.gameList.findMany({
-      where: {
-        userId: user.id,
-      },
-      include: {
-        gameEntries: {
-          orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
-          select: gameEntrySelect,
-        },
-      },
-      orderBy: {
-        type: "asc",
-      },
+    // Build where clause for game entries
+    const gameEntryWhere: any = {
+      userId: user.id,
+    }
+
+    // Add status filter if specific status requested
+    if (gameListType) {
+      gameEntryWhere.status = gameListType
+    }
+
+    // Fetch game entries with optional status filter
+    const gameEntries = await prisma.gameEntry.findMany({
+      where: gameEntryWhere,
+      select: gameEntrySelect,
+      orderBy: [{ addedAt: "desc" }, { updatedAt: "desc" }],
     })
 
-    // Calculate complete metadata for ALL games
-    const allEntries = allGameLists.flatMap((list) => list.gameEntries)
-    const totalGames = allEntries.length
-    const totalHours = allEntries.reduce(
+    // Calculate complete metadata for ALL games (regardless of status filter)
+    const allUserEntries = status
+      ? await prisma.gameEntry.findMany({
+          where: { userId: user.id },
+          select: { rating: true, hoursPlayed: true, status: true },
+        })
+      : gameEntries.map((entry) => ({
+          rating: entry.rating,
+          hoursPlayed: entry.hoursPlayed,
+          status: entry.status,
+        }))
+
+    const totalGames = allUserEntries.length
+    const totalHours = allUserEntries.reduce(
       (sum, entry) => sum + (entry.hoursPlayed || 0),
       0
     )
-    const ratingsWithValues = allEntries
+    const ratingsWithValues = allUserEntries
       .map((entry) => entry.rating)
       .filter((rating): rating is number => rating !== null)
 
@@ -140,21 +156,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ratingsWithValues.length
         : null
 
-    // Create a map of all game lists for easy access
-    const gameListsMap = new Map(allGameLists.map((list) => [list.type, list]))
-
     // Calculate counts for each status (always include all statuses)
-    const statusOrder: GameListType[] = [
-      "PLAYING",
-      "PLAN_TO_PLAY",
-      "COMPLETED",
-      "ON_HOLD",
-      "DROPPED",
+    const statusOrder = [
+      GameListType.PLAYING,
+      GameListType.PLAN_TO_PLAY,
+      GameListType.COMPLETED,
+      GameListType.ON_HOLD,
+      GameListType.DROPPED,
     ]
 
-    const listCounts = statusOrder.reduce((acc, listType) => {
-      const gameList = gameListsMap.get(listType)
-      acc[listType] = gameList?.gameEntries.length || 0
+    const listCounts = statusOrder.reduce((acc, statusType) => {
+      acc[statusType] = allUserEntries.filter(
+        (entry) => entry.status === statusType
+      ).length
       return acc
     }, {} as Record<GameListType, number>)
 
@@ -170,23 +184,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Handle single status request
     if (status) {
-      const requestedGameList = gameListsMap.get(gameListType!)
-
-      // If no game list exists for this type, return empty list with complete metadata
-      if (!requestedGameList) {
-        return NextResponse.json({
-          user: {
-            username: user.username,
-            image: user.image,
-          },
-          gameList: {
-            type: gameListType,
-            status: parseInt(status),
-            gameEntries: [],
-          },
-          meta: completeMetadata,
-        })
-      }
+      const statusNumber = parseInt(status)
 
       return NextResponse.json({
         user: {
@@ -194,27 +192,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           image: user.image,
         },
         gameList: {
-          id: requestedGameList.id,
-          type: requestedGameList.type,
-          status: parseInt(status),
-          gameEntries: requestedGameList.gameEntries,
+          type: gameListType,
+          status: gameListType, // Using enum value directly (1, 2, 3, 4, 5)
+          gameEntries: gameEntries,
         },
         meta: completeMetadata,
       })
     } else {
-      // Handle all lists request
-      // Build ordered game lists with status numbers (ensure all statuses are represented)
-      const orderedGameLists = statusOrder.map((type) => {
-        const gameList = gameListsMap.get(type)
-        const statusNumber = Object.keys(STATUS_MAP).find(
-          (key) => STATUS_MAP[key as StatusKey] === type
+      // Handle all lists request - group entries by status
+      const groupedEntries = statusOrder.map((statusType) => {
+        const entriesForStatus = gameEntries.filter(
+          (entry) => entry.status === statusType
         )
 
         return {
-          id: gameList?.id || null,
-          type: type,
-          status: parseInt(statusNumber!),
-          gameEntries: gameList?.gameEntries || [],
+          type: statusType,
+          status: statusType, // Using enum value directly (1, 2, 3, 4, 5)
+          gameEntries: entriesForStatus,
         }
       })
 
@@ -223,12 +217,180 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           username: user.username,
           image: user.image,
         },
-        gameLists: orderedGameLists,
+        gameLists: groupedEntries,
         meta: completeMetadata,
       })
     }
   } catch (error) {
     console.error("Error fetching games list:", error)
+    return NextResponse.json(
+      {
+        error: {
+          message: "Internal server error",
+          code: "INTERNAL_ERROR",
+        },
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { userName } = await params
+    const body = await request.json()
+    const { entryId } = body
+
+    // Validate userName
+    if (!userName || userName.trim() === "") {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Username is required",
+            code: "INVALID_USERNAME",
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    // Validate entryId
+    if (!entryId || entryId.trim() === "") {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Game entry ID is required",
+            code: "INVALID_ENTRY_ID",
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    // Check authentication using NextAuth session
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              "Authentication required. Please sign in to delete game entries.",
+            code: "UNAUTHORIZED",
+          },
+        },
+        { status: 401 }
+      )
+    }
+
+    // Find the authenticated user
+    const authenticatedUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, username: true },
+    })
+
+    if (!authenticatedUser) {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Authenticated user not found",
+            code: "USER_NOT_FOUND",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
+    // Verify the authenticated user matches the username in URL
+    if (authenticatedUser.username?.toLowerCase() !== userName.toLowerCase()) {
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              "Access denied. You can only delete games from your own list.",
+            code: "FORBIDDEN",
+          },
+        },
+        { status: 403 }
+      )
+    }
+
+    // Find the game entry and verify ownership
+    const gameEntry = await prisma.gameEntry.findFirst({
+      where: {
+        id: entryId,
+        userId: authenticatedUser.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        rawgGameId: true,
+        status: true,
+        rating: true,
+        hoursPlayed: true,
+      },
+    })
+
+    if (!gameEntry) {
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              "Game entry not found or you don't have permission to delete it",
+            code: "ENTRY_NOT_FOUND",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
+    // Store info for response before deletion
+    const deletedEntryInfo = {
+      id: gameEntry.id,
+      title: gameEntry.title,
+      rawgGameId: gameEntry.rawgGameId,
+      status: gameEntry.status,
+      rating: gameEntry.rating,
+      hoursPlayed: gameEntry.hoursPlayed,
+    }
+
+    // Delete the game entry
+    await prisma.gameEntry.delete({
+      where: { id: entryId },
+    })
+
+    // Return success response with deleted entry info
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Successfully deleted "${
+          deletedEntryInfo.title
+        }" from your ${deletedEntryInfo.status
+          .toLowerCase()
+          .replace("_", " ")} list`,
+        deletedEntry: deletedEntryInfo,
+        user: {
+          username: authenticatedUser.username,
+        },
+      },
+      { status: 200 }
+    )
+  } catch (error: any) {
+    console.error("Error deleting game entry:", error)
+
+    // Handle specific Prisma errors
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Game entry not found",
+            code: "ENTRY_NOT_FOUND",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: {

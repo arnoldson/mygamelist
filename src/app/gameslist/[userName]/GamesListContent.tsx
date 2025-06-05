@@ -16,11 +16,13 @@ import {
 } from "lucide-react"
 import GamesListSkeleton from "./GamesListSkeleton"
 import { useSession } from "next-auth/react"
+import { GameListType } from "@/types/enums"
 
 interface GameEntry {
   id: string
   rawgGameId: number
   title: string
+  status: GameListType
   rating?: number
   review?: string
   hoursPlayed?: number
@@ -31,9 +33,8 @@ interface GameEntry {
 }
 
 interface GameList {
-  id?: string
-  type: string
-  status: number
+  type: GameListType
+  status: GameListType
   gameEntries: GameEntry[]
 }
 
@@ -48,7 +49,7 @@ interface ApiResponse {
     totalGames: number
     totalHours: number
     averageRating?: number
-    listCounts?: Record<string, number>
+    listCounts?: Record<GameListType, number>
   }
 }
 
@@ -278,16 +279,10 @@ export default function GamesListContent({
         }
 
         // Update list counts if available
-        if (updatedData.meta.listCounts) {
-          const deletedEntryListType = Object.entries(STATUS_CONFIG).find(
-            ([_, config]) => config.status === status
-          )?.[1]?.type
-
-          if (
-            deletedEntryListType &&
-            updatedData.meta.listCounts[deletedEntryListType] > 0
-          ) {
-            updatedData.meta.listCounts[deletedEntryListType] -= 1
+        if (updatedData.meta.listCounts && deleteModal.gameEntry) {
+          const deletedEntryStatus = deleteModal.gameEntry.status
+          if (updatedData.meta.listCounts[deletedEntryStatus] > 0) {
+            updatedData.meta.listCounts[deletedEntryStatus] -= 1
           }
         }
 
@@ -388,8 +383,9 @@ export default function GamesListContent({
 
   const currentGameLists =
     status && data.gameList ? [data.gameList] : data.gameLists || []
+
   const currentStatus = status
-    ? STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]
+    ? STATUS_CONFIG[parseInt(status) as GameListType]
     : null
 
   return (
@@ -450,13 +446,13 @@ export default function GamesListContent({
           >
             All Lists ({data.meta.totalGames})
           </button>
-          {Object.entries(STATUS_CONFIG).map(([statusNum, config]) => {
-            const count = data.meta.listCounts?.[config.type] || 0
-            const isActive = status === statusNum
+          {Object.entries(STATUS_CONFIG).map(([statusValue, config]) => {
+            const count = data.meta.listCounts?.[config.value] || 0
+            const isActive = status === statusValue
             return (
               <button
-                key={statusNum}
-                onClick={() => handleStatusChange(statusNum)}
+                key={statusValue}
+                onClick={() => handleStatusChange(statusValue)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? `${config.color} text-white shadow-md transform scale-105`
@@ -484,10 +480,7 @@ export default function GamesListContent({
       )}
 
       {currentGameLists.map((gameList) => {
-        const statusConfig =
-          STATUS_CONFIG[
-            gameList.status.toString() as keyof typeof STATUS_CONFIG
-          ]
+        const statusConfig = STATUS_CONFIG[gameList.status]
 
         return (
           <div
