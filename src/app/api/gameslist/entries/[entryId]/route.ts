@@ -3,12 +3,31 @@ import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { GameListType } from "@/types/enums"
 
 const prisma = new PrismaClient()
 
 interface RouteParams {
   params: {
     entryId: string
+  }
+}
+
+// Helper to get status label from enum value
+const getStatusLabel = (status: GameListType): string => {
+  switch (status) {
+    case GameListType.PLAYING:
+      return "currently playing"
+    case GameListType.PLAN_TO_PLAY:
+      return "plan to play"
+    case GameListType.COMPLETED:
+      return "completed"
+    case GameListType.ON_HOLD:
+      return "on hold"
+    case GameListType.DROPPED:
+      return "dropped"
+    default:
+      return "unknown"
   }
 }
 
@@ -63,24 +82,24 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Find the game entry and verify ownership in one query
+    // Find the game entry and verify ownership (simplified - no GameList join needed)
     const gameEntry = await prisma.gameEntry.findFirst({
       where: {
         id: entryId,
-        gameList: {
-          userId: authenticatedUser.id,
-        },
+        userId: authenticatedUser.id,
       },
-      include: {
-        gameList: {
+      select: {
+        id: true,
+        title: true,
+        rawgGameId: true,
+        status: true,
+        rating: true,
+        hoursPlayed: true,
+        review: true,
+        addedAt: true,
+        user: {
           select: {
-            type: true,
-            userId: true,
-            user: {
-              select: {
-                username: true,
-              },
-            },
+            username: true,
           },
         },
       },
@@ -104,7 +123,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       id: gameEntry.id,
       title: gameEntry.title,
       rawgGameId: gameEntry.rawgGameId,
-      gameListType: gameEntry.gameList.type,
+      status: gameEntry.status,
+      statusLabel: getStatusLabel(gameEntry.status),
       rating: gameEntry.rating,
       hoursPlayed: gameEntry.hoursPlayed,
       review: gameEntry.review,
@@ -120,14 +140,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       {
         success: true,
-        message: `Successfully deleted "${
-          deletedEntryInfo.title
-        }" from your ${deletedEntryInfo.gameListType
-          .toLowerCase()
-          .replace("_", " ")} list`,
+        message: `Successfully deleted "${deletedEntryInfo.title}" from your ${deletedEntryInfo.statusLabel} list`,
         deletedEntry: deletedEntryInfo,
         user: {
-          username: gameEntry.gameList.user.username,
+          username: gameEntry.user.username,
         },
       },
       { status: 200 }
