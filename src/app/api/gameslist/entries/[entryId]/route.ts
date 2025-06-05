@@ -31,6 +31,230 @@ const getStatusLabel = (status: GameListType): string => {
   }
 }
 
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { entryId } = params
+
+    if (!entryId || entryId.trim() === "") {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Game entry ID is required",
+            code: "INVALID_ENTRY_ID",
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              "Authentication required. Please sign in to update game entries.",
+            code: "UNAUTHORIZED",
+          },
+        },
+        { status: 401 }
+      )
+    }
+
+    const authenticatedUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, username: true, email: true },
+    })
+
+    if (!authenticatedUser) {
+      return NextResponse.json(
+        {
+          error: {
+            message: "Authenticated user not found",
+            code: "USER_NOT_FOUND",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
+    const gameEntry = await prisma.gameEntry.findFirst({
+      where: { id: entryId, userId: authenticatedUser.id },
+    })
+
+    if (!gameEntry) {
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              "Game entry not found or you don't have permission to update it",
+            code: "ENTRY_NOT_FOUND",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
+    // Parse and validate request body
+    const body = await request.json()
+    const allowedFields = [
+      "status",
+      "rating",
+      "review",
+      "hoursPlayed",
+      "startedAt",
+      "completedAt",
+    ]
+    const updates: any = {}
+
+    // Validation logic
+    let hasUpdate = false
+    if ("status" in body) {
+      // Assuming GameListType is an enum, you may want to check against allowed values
+      if (
+        typeof body.status !== "string" ||
+        !Object.values(GameListType).includes(body.status)
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for status",
+              code: "INVALID_STATUS",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.status = body.status
+      hasUpdate = true
+    }
+    if ("rating" in body) {
+      if (
+        typeof body.rating !== "number" ||
+        isNaN(body.rating) ||
+        body.rating < 0
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for rating",
+              code: "INVALID_RATING",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.rating = body.rating
+      hasUpdate = true
+    }
+    if ("review" in body) {
+      if (typeof body.review !== "string") {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for review",
+              code: "INVALID_REVIEW",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.review = body.review
+      hasUpdate = true
+    }
+    if ("hoursPlayed" in body) {
+      if (
+        typeof body.hoursPlayed !== "number" ||
+        isNaN(body.hoursPlayed) ||
+        body.hoursPlayed < 0
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for hoursPlayed",
+              code: "INVALID_HOURS_PLAYED",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.hoursPlayed = body.hoursPlayed
+      hasUpdate = true
+    }
+    if ("startedAt" in body) {
+      if (
+        body.startedAt !== null &&
+        (typeof body.startedAt !== "string" ||
+          isNaN(Date.parse(body.startedAt)))
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for startedAt",
+              code: "INVALID_STARTED_AT",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.startedAt = body.startedAt
+      hasUpdate = true
+    }
+    if ("completedAt" in body) {
+      if (
+        body.completedAt !== null &&
+        (typeof body.completedAt !== "string" ||
+          isNaN(Date.parse(body.completedAt)))
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Invalid value for completedAt",
+              code: "INVALID_COMPLETED_AT",
+            },
+          },
+          { status: 400 }
+        )
+      }
+      updates.completedAt = body.completedAt
+      hasUpdate = true
+    }
+
+    // Require at least one updatable field
+    if (!hasUpdate) {
+      return NextResponse.json(
+        {
+          error: {
+            message: "At least one updatable field must be provided",
+            code: "NO_FIELDS_TO_UPDATE",
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    const updatedEntry = await prisma.gameEntry.update({
+      where: { id: entryId },
+      data: updates,
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Successfully updated game entry "${updatedEntry.title}".`,
+        updatedEntry,
+      },
+      { status: 200 }
+    )
+  } catch (error: any) {
+    console.error("Error updating game entry:", error)
+    return NextResponse.json(
+      { error: { message: "Internal server error", code: "INTERNAL_ERROR" } },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { entryId } = await params
