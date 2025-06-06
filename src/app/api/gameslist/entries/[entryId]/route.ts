@@ -33,7 +33,7 @@ const getStatusLabel = (status: GameListType): string => {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { entryId } = params
+    const { entryId } = await params
 
     if (!entryId || entryId.trim() === "") {
       return NextResponse.json(
@@ -110,22 +110,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Validation logic
     let hasUpdate = false
     if ("status" in body) {
-      // Assuming GameListType is an enum, you may want to check against allowed values
-      if (
-        typeof body.status !== "string" ||
-        !Object.values(GameListType).includes(body.status)
-      ) {
+      const statusValue = parseInt(body.status)
+
+      // Get all numeric values from the enum
+      const validStatuses = Object.values(GameListType).filter(
+        (value) => typeof value === "number"
+      )
+
+      if (isNaN(statusValue) || !validStatuses.includes(statusValue)) {
         return NextResponse.json(
           {
             error: {
-              message: "Invalid value for status",
+              message: `Invalid status. Valid values are: ${validStatuses.join(
+                ", "
+              )}`,
               code: "INVALID_STATUS",
             },
           },
           { status: 400 }
         )
       }
-      updates.status = body.status
+
+      updates.status = statusValue
       hasUpdate = true
     }
     if ("rating" in body) {
@@ -181,42 +187,94 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updates.hoursPlayed = body.hoursPlayed
       hasUpdate = true
     }
+
+    // Helper function to convert date string to ISO DateTime
+    function dateStringToISODateTime(dateString: string): string {
+      // Create date object and set to start of day UTC
+      const date = new Date(dateString + "T00:00:00.000Z")
+      return date.toISOString()
+    }
+
+    // In your validation logic:
     if ("startedAt" in body) {
-      if (
-        body.startedAt !== null &&
-        (typeof body.startedAt !== "string" ||
-          isNaN(Date.parse(body.startedAt)))
-      ) {
-        return NextResponse.json(
-          {
-            error: {
-              message: "Invalid value for startedAt",
-              code: "INVALID_STARTED_AT",
+      if (body.startedAt !== null) {
+        // Validate date format (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+        if (
+          typeof body.startedAt !== "string" ||
+          !dateRegex.test(body.startedAt)
+        ) {
+          return NextResponse.json(
+            {
+              error: {
+                message:
+                  "Invalid date format for startedAt. Use YYYY-MM-DD format.",
+                code: "INVALID_DATE_FORMAT",
+              },
             },
-          },
-          { status: 400 }
-        )
+            { status: 400 }
+          )
+        }
+
+        // Check if date is valid
+        const date = new Date(body.startedAt)
+        if (isNaN(date.getTime())) {
+          return NextResponse.json(
+            {
+              error: {
+                message: "Invalid date for startedAt",
+                code: "INVALID_DATE",
+              },
+            },
+            { status: 400 }
+          )
+        }
+
+        // Convert to ISO DateTime string
+        updates.startedAt = dateStringToISODateTime(body.startedAt)
+      } else {
+        updates.startedAt = null
       }
-      updates.startedAt = body.startedAt
       hasUpdate = true
     }
+
+    // Same logic for completedAt
     if ("completedAt" in body) {
-      if (
-        body.completedAt !== null &&
-        (typeof body.completedAt !== "string" ||
-          isNaN(Date.parse(body.completedAt)))
-      ) {
-        return NextResponse.json(
-          {
-            error: {
-              message: "Invalid value for completedAt",
-              code: "INVALID_COMPLETED_AT",
+      if (body.completedAt !== null) {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+        if (
+          typeof body.completedAt !== "string" ||
+          !dateRegex.test(body.completedAt)
+        ) {
+          return NextResponse.json(
+            {
+              error: {
+                message:
+                  "Invalid date format for completedAt. Use YYYY-MM-DD format.",
+                code: "INVALID_DATE_FORMAT",
+              },
             },
-          },
-          { status: 400 }
-        )
+            { status: 400 }
+          )
+        }
+
+        const date = new Date(body.completedAt)
+        if (isNaN(date.getTime())) {
+          return NextResponse.json(
+            {
+              error: {
+                message: "Invalid date for completedAt",
+                code: "INVALID_DATE",
+              },
+            },
+            { status: 400 }
+          )
+        }
+
+        updates.completedAt = dateStringToISODateTime(body.completedAt)
+      } else {
+        updates.completedAt = null
       }
-      updates.completedAt = body.completedAt
       hasUpdate = true
     }
 

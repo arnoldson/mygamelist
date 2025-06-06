@@ -12,11 +12,15 @@ import {
   MessageSquare,
   User,
   Trash2,
+  Edit3,
   X,
 } from "lucide-react"
 import GamesListSkeleton from "./GamesListSkeleton"
 import { useSession } from "next-auth/react"
 import { GameListType } from "@/types/enums"
+import { useGameEntry } from "@/hooks/useGameEntry"
+import GameEntryForm from "@/components/GameEntryForm"
+import { deepCopy } from "@/lib/utils"
 
 interface GameEntry {
   id: string
@@ -64,6 +68,11 @@ interface DeleteModalProps {
   onConfirm: () => void
   gameTitle: string
   isDeleting: boolean
+}
+
+interface EditModalState {
+  isOpen: boolean
+  gameEntry: GameEntry | null
 }
 
 function DeleteConfirmationModal({
@@ -165,11 +174,23 @@ export default function GamesListContent({
     isDeleting: false,
   })
 
+  // Edit modal state
+  const [editModal, setEditModal] = useState<EditModalState>({
+    isOpen: false,
+    gameEntry: null,
+  })
+
   const router = useRouter()
   const { data: session } = useSession()
+  const {
+    updateEntry,
+    isLoading: isUpdating,
+    error: updateError,
+    clearError,
+  } = useGameEntry()
 
-  // Check if current user can delete entries (owns this profile)
-  const canDelete = session?.user?.username === userName
+  // Check if current user can modify entries (owns this profile)
+  const canModify = session?.user?.username === userName
 
   // Fetch games list data from internal API
   useEffect(() => {
@@ -207,6 +228,148 @@ export default function GamesListContent({
     fetchData()
   }, [userName, status])
 
+  // Handle edit game entry
+  const handleEditGame = (gameEntry: GameEntry) => {
+    clearError() // Clear any previous errors
+    setEditModal({
+      isOpen: true,
+      gameEntry,
+    })
+  }
+
+  // Handle save from edit modal
+  const handleSaveEdit = async (formData: Partial<GameEntry>) => {
+    if (!editModal.gameEntry) return
+
+    try {
+      const result = await updateEntry(editModal.gameEntry.id, formData)
+
+      // Update local state with the updated entry
+      setData((prevData) => {
+        if (!prevData) return prevData
+
+        const updatedEntry = {
+          ...editModal.gameEntry,
+          ...formData,
+        } as GameEntry
+
+        // Deep copy to avoid mutating original state
+        const updatedStateData = deepCopy(prevData)
+
+        const oldStatus = editModal.gameEntry!.status
+        const newStatus = updatedEntry.status
+
+        if (updatedStateData.gameList) {
+          if (oldStatus !== newStatus) {
+            // Status changed - move entry between lists
+            updatedStateData.gameList.gameEntries =
+              updatedStateData.gameList.gameEntries.filter(
+                (entry) => entry.id !== editModal.gameEntry!.id
+              )
+          } else {
+            // Status unchanged - just update the entry
+            // Single list view
+            updatedStateData.gameList.gameEntries =
+              updatedStateData.gameList.gameEntries.map((entry) =>
+                entry.id === editModal.gameEntry!.id ? updatedEntry : entry
+              )
+          }
+        }
+
+        if (updatedStateData.gameLists) {
+          // Multiple lists view
+
+          if (oldStatus !== newStatus) {
+            // Status changed - move entry between lists
+            updatedStateData.gameLists = updatedStateData.gameLists.map(
+              (gameList) => {
+                if (gameList.status === oldStatus) {
+                  // Remove from old list
+                  return {
+                    ...gameList,
+                    gameEntries: gameList.gameEntries.filter(
+                      (entry) => entry.id !== editModal.gameEntry!.id
+                    ),
+                  }
+                } else if (gameList.status === newStatus) {
+                  // Add to new list (or update if already there)
+                  const existingIndex = gameList.gameEntries.findIndex(
+                    (entry) => entry.id === editModal.gameEntry!.id
+                  )
+                  if (existingIndex >= 0) {
+                    // Update existing entry
+                    const newEntries = [...gameList.gameEntries]
+                    newEntries[existingIndex] = updatedEntry
+                    return { ...gameList, gameEntries: newEntries }
+                  } else {
+                    // Add new entry
+                    return {
+                      ...gameList,
+                      gameEntries: [...gameList.gameEntries, updatedEntry],
+                    }
+                  }
+                }
+                return gameList
+              }
+            )
+          } else {
+            // Status unchanged - just update the entry
+            updatedStateData.gameLists = updatedStateData.gameLists.map(
+              (gameList) => ({
+                ...gameList,
+                gameEntries: gameList.gameEntries.map((entry) =>
+                  entry.id === editModal.gameEntry!.id ? updatedEntry : entry
+                ),
+              })
+            )
+          }
+        }
+
+        // Update metadata (hours played might have changed)
+        const hoursDiff =
+          (updatedEntry.hoursPlayed || 0) -
+          (editModal.gameEntry!.hoursPlayed || 0)
+        if (hoursDiff !== 0) {
+          updatedStateData.meta.totalHours = Math.max(
+            0,
+            updatedStateData.meta.totalHours + hoursDiff
+          )
+        }
+
+        if (oldStatus !== newStatus) {
+          // Update list counts if available
+          if (updatedStateData.meta.listCounts) {
+            updatedStateData.meta.listCounts = {
+              ...updatedStateData.meta.listCounts,
+              [oldStatus]: updatedStateData.meta.listCounts[oldStatus] - 1,
+              [newStatus]: updatedStateData.meta.listCounts[newStatus] + 1,
+            }
+          }
+        }
+
+        return updatedStateData
+      })
+
+      // Close the modal
+      setEditModal({
+        isOpen: false,
+        gameEntry: null,
+      })
+    } catch (err) {
+      // Error is handled by the hook and will be shown in the form
+      console.error("Failed to update game entry:", err)
+    }
+  }
+
+  // Handle close edit modal
+  const handleCloseEdit = () => {
+    clearError()
+    setEditModal({
+      isOpen: false,
+      gameEntry: null,
+    })
+  }
+
   // Handle delete game entry
   const handleDeleteGame = async (gameEntry: GameEntry) => {
     setDeleteModal({
@@ -231,8 +394,6 @@ export default function GamesListContent({
           },
         }
       )
-
-      console.log("Error response: ", response)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -518,23 +679,35 @@ export default function GamesListContent({
                       key={entry.id}
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group"
                     >
-                      {/* Delete Button (only show for owner) */}
-                      {canDelete && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteGame(entry)
-                          }}
-                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 z-10"
-                          title="Delete game"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {/* Action Buttons (only show for owner) */}
+                      {canModify && (
+                        <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditGame(entry)
+                            }}
+                            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            title="Edit game"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteGame(entry)
+                            }}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            title="Delete game"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
 
                       {/* Game Header */}
                       <div className="mb-3">
-                        <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2 pr-12">
+                        <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2 pr-20">
                           {entry.title}
                         </h3>
                       </div>
@@ -633,6 +806,18 @@ export default function GamesListContent({
         </div>
       )}
 
+      {/* Edit Game Modal */}
+      {editModal.isOpen && editModal.gameEntry && (
+        <GameEntryForm
+          gameEntry={editModal.gameEntry}
+          isModal={true}
+          onClose={handleCloseEdit}
+          onSave={handleSaveEdit}
+          showTitle={true}
+          submitButtonText={isUpdating ? "Saving..." : "Save Changes"}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
@@ -641,6 +826,25 @@ export default function GamesListContent({
         gameTitle={deleteModal.gameEntry?.title || ""}
         isDeleting={deleteModal.isDeleting}
       />
+
+      {/* Optional: Update Error Toast */}
+      {updateError && (
+        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-[60]">
+          <div className="flex items-center max-w-sm">
+            <div className="text-red-500 mr-2">⚠️</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Update Failed</p>
+              <p className="text-sm text-red-600">{updateError}</p>
+            </div>
+            <button
+              onClick={clearError}
+              className="ml-2 text-red-400 hover:text-red-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
