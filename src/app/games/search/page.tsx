@@ -2,14 +2,35 @@
 
 import { useState, useCallback } from "react"
 import { Search, GamepadIcon, Loader2 } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 // Import types from your types file
 import type { Game, RAWGSearchResponse } from "@/types/game"
 import GameCard from "./GameCard"
+import { useGameEntry } from "@/hooks/useGameEntry"
+import GameEntryForm from "@/components/GameEntryForm"
+import { GameListType } from "@/types/enums"
 
 interface ErrorResponse {
   error: string
   message: string
+}
+
+interface AddModalState {
+  isOpen: boolean
+  game: Game | null
+}
+
+interface GameEntry {
+  id: string
+  rawgGameId: number
+  title: string
+  status: GameListType
+  rating?: number
+  review?: string
+  hoursPlayed?: number
+  startedAt?: string
+  completedAt?: string
 }
 
 export default function GamesSearchPage() {
@@ -20,6 +41,20 @@ export default function GamesSearchPage() {
   const [totalCount, setTotalCount] = useState(-1)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
+
+  // Add modal state
+  const [addModal, setAddModal] = useState<AddModalState>({
+    isOpen: false,
+    game: null,
+  })
+
+  const { data: session } = useSession()
+  const {
+    createEntry,
+    isLoading: isCreating,
+    error: createError,
+    clearError,
+  } = useGameEntry()
 
   const searchGames = useCallback(
     async (searchQuery: string, pageNum: number = 1) => {
@@ -79,6 +114,56 @@ export default function GamesSearchPage() {
     }
   }
 
+  // Handle add game to list
+  const handleAddGame = (game: Game) => {
+    if (!session?.user) {
+      // Redirect to login or show login modal
+      window.location.href = "/api/auth/signin"
+      return
+    }
+    clearError() // Clear any previous errors
+    setAddModal({
+      isOpen: true,
+      game,
+    })
+  }
+
+  // Handle save from add modal
+  const handleCreateAdd = async (formData: Partial<GameEntry>) => {
+    if (!addModal.game) return
+
+    try {
+      const gameData = {
+        title: addModal.game.name,
+        rawgGameId: addModal.game.id,
+        ...formData,
+      }
+      const result = await createEntry(gameData)
+
+      // Close the modal on success
+      setAddModal({
+        isOpen: false,
+        game: null,
+      })
+
+      // Optional: Show success message
+      // You could implement a toast notification here
+      console.log(`Successfully added "${addModal.game.name}" to your library!`)
+    } catch (err) {
+      // Error is handled by the hook and will be shown in the form
+      console.error("Failed to create game entry:", err)
+    }
+  }
+
+  // Handle close add modal
+  const handleCloseAdd = () => {
+    clearError()
+    setAddModal({
+      isOpen: false,
+      game: null,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -117,6 +202,23 @@ export default function GamesSearchPage() {
           </div>
         </form>
 
+        {/* Auth Status Info */}
+        {!session?.user && games.length > 0 && (
+          <div className="max-w-6xl mx-auto mb-6">
+            <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 text-blue-200">
+              <p className="text-sm text-center">
+                <a
+                  href="/api/auth/signin"
+                  className="underline hover:text-blue-100 transition-colors"
+                >
+                  Sign in
+                </a>{" "}
+                to add games to your library
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Results Count */}
         {totalCount > 0 && (
           <div className="max-w-6xl mx-auto mb-6">
@@ -141,7 +243,12 @@ export default function GamesSearchPage() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {games.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  showAddButton={true}
+                  onAddGame={handleAddGame}
+                />
               ))}
             </div>
 
@@ -193,6 +300,41 @@ export default function GamesSearchPage() {
           </div>
         )}
       </div>
+
+      {/* Add Game Modal */}
+      {addModal.isOpen && addModal.game && (
+        <GameEntryForm
+          gameEntry={{
+            rawgGameId: addModal.game.id,
+            title: addModal.game.name,
+            status: GameListType.PLAN_TO_PLAY, // Default status
+          }}
+          isModal={true}
+          onClose={handleCloseAdd}
+          onCreate={handleCreateAdd}
+          showTitle={true}
+          submitButtonText={isCreating ? "Adding..." : "Add to Library"}
+        />
+      )}
+
+      {/* Optional: Create Error Toast */}
+      {createError && (
+        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-[60]">
+          <div className="flex items-center max-w-sm">
+            <div className="text-red-500 mr-2">⚠️</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Add Failed</p>
+              <p className="text-sm text-red-600">{createError}</p>
+            </div>
+            <button
+              onClick={clearError}
+              className="ml-2 text-red-400 hover:text-red-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

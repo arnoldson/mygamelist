@@ -1,12 +1,21 @@
 import Image from "next/image"
-import { Star, Calendar, GamepadIcon } from "lucide-react"
+import { Star, Calendar, GamepadIcon, Plus } from "lucide-react"
+import { useSession } from "next-auth/react"
 import type { Game } from "@/types/game"
 
 interface GameCardProps {
   game: Game
+  onAddGame?: (game: Game) => void
+  showAddButton?: boolean
 }
 
-export default function GameCard({ game }: GameCardProps) {
+export default function GameCard({
+  game,
+  onAddGame,
+  showAddButton = false,
+}: GameCardProps) {
+  const { data: session } = useSession()
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBA"
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -23,10 +32,17 @@ export default function GameCard({ game }: GameCardProps) {
       .join(", ")
   }
 
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onAddGame) {
+      onAddGame(game)
+    }
+  }
+
   return (
     <div
       data-testid="game-card"
-      className="bg-white/10 backdrop-blur-sm rounded-xl overflow-hidden border border-white/20 hover:border-purple-500/50 transition-all duration-300 hover:transform hover:scale-105"
+      className="bg-white/10 backdrop-blur-sm rounded-xl overflow-hidden border border-white/20 hover:border-purple-500/50 transition-all duration-300 hover:transform hover:scale-105 relative group"
     >
       {/* Game Image */}
       <div className="relative h-48 bg-gray-800">
@@ -43,8 +59,10 @@ export default function GameCard({ game }: GameCardProps) {
             <GamepadIcon className="w-12 h-12 text-gray-600" />
           </div>
         )}
+
+        {/* Metacritic Score */}
         {game.metacritic && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 left-3">
             <div
               className={`px-2 py-1 rounded text-xs font-bold ${
                 game.metacritic >= 75
@@ -56,6 +74,41 @@ export default function GameCard({ game }: GameCardProps) {
             >
               {game.metacritic}
             </div>
+          </div>
+        )}
+
+        {/* Add Button */}
+        {showAddButton && (
+          <div className="absolute top-3 right-3">
+            {session?.user ? (
+              <button
+                onClick={handleAddClick}
+                className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 transform hover:scale-110"
+                title="Add to your library"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleAddClick}
+                className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 text-xs font-medium"
+                title="Sign in to add to library"
+              >
+                Sign in
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Overlay for non-authenticated users */}
+        {showAddButton && !session?.user && (
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-t-xl flex items-center justify-center">
+            <button
+              onClick={handleAddClick}
+              className="opacity-0 group-hover:opacity-100 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 text-sm font-medium shadow-lg"
+            >
+              Sign in to Add
+            </button>
           </div>
         )}
       </div>
