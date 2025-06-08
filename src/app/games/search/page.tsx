@@ -3,13 +3,15 @@
 import { useState, useCallback } from "react"
 import { Search, GamepadIcon, Loader2 } from "lucide-react"
 import { useSession } from "next-auth/react"
+import Link from "next/link"
 
-// Import types from your types file
 import type { Game, RAWGSearchResponse } from "@/types/game"
 import GameCard from "./GameCard"
 import { useGameEntry } from "@/hooks/useGameEntry"
 import GameEntryForm from "@/components/GameEntryForm"
 import { GameListType } from "@/types/enums"
+import { useToast } from "@/hooks/useToast"
+import { ToastContainer } from "@/components/Toast"
 
 interface ErrorResponse {
   error: string
@@ -55,6 +57,9 @@ export default function GamesSearchPage() {
     error: createError,
     clearError,
   } = useGameEntry()
+
+  // Add toast hook
+  const { toasts, addToast, removeToast } = useToast()
 
   const searchGames = useCallback(
     async (searchQuery: string, pageNum: number = 1) => {
@@ -146,11 +151,22 @@ export default function GamesSearchPage() {
         game: null,
       })
 
-      // Optional: Show success message
-      // You could implement a toast notification here
-      console.log(`Successfully added "${addModal.game.name}" to your library!`)
+      // Show success toast notification
+      addToast({
+        type: "success",
+        title: "Game Added Successfully!",
+        message: `"${addModal.game.name}" has been added to your library.`,
+        duration: 5000,
+      })
     } catch (err) {
-      // Error is handled by the hook and will be shown in the form
+      // Show error toast notification
+      addToast({
+        type: "error",
+        title: "Failed to Add Game",
+        message:
+          err instanceof Error ? err.message : "An unexpected error occurred.",
+        duration: 7000,
+      })
       console.error("Failed to create game entry:", err)
     }
   }
@@ -206,15 +222,13 @@ export default function GamesSearchPage() {
         {!session?.user && games.length > 0 && (
           <div className="max-w-6xl mx-auto mb-6">
             <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 text-blue-200">
-              <p className="text-sm text-center">
-                <a
-                  href="/api/auth/signin"
-                  className="underline hover:text-blue-100 transition-colors"
-                >
-                  Sign in
-                </a>{" "}
-                to add games to your library
-              </p>
+              <Link
+                href="/api/auth/signin"
+                className="underline hover:text-blue-100 transition-colors"
+              >
+                Sign in
+              </Link>{" "}
+              to add games to your library
             </div>
           </div>
         )}
@@ -317,24 +331,8 @@ export default function GamesSearchPage() {
         />
       )}
 
-      {/* Optional: Create Error Toast */}
-      {createError && (
-        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-[60]">
-          <div className="flex items-center max-w-sm">
-            <div className="text-red-500 mr-2">⚠️</div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">Add Failed</p>
-              <p className="text-sm text-red-600">{createError}</p>
-            </div>
-            <button
-              onClick={clearError}
-              className="ml-2 text-red-400 hover:text-red-600"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }
