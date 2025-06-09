@@ -6,7 +6,7 @@ test("homepage displays welcome message", async ({ page }) => {
 
   // Check for the text "Welcome" on the page
   // The :text() selector will find elements containing the specified text
-  const welcomeElement = page.locator(':text("Welcome")')
+  const welcomeElement = page.locator(':text("Track your gaming journey")')
 
   // Assert that the welcome element is visible
   await expect(welcomeElement).toBeVisible()

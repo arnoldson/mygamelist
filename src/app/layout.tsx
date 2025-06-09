@@ -3,8 +3,9 @@ import "./globals.css"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "My Auth App",
-  description: "App with Next.js, NextAuth and Prisma",
+  title: "My Game List",
+  description:
+    "Track your games, share your progress, and discover new titles.",
 }
 
 export default function RootLayout({
