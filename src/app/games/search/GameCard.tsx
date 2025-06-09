@@ -2,9 +2,10 @@ import Image from "next/image"
 import { Star, Calendar, GamepadIcon, Plus } from "lucide-react"
 import { useSession } from "next-auth/react"
 import type { Game } from "@/types/game"
+import { GameListType } from "@/types/enums"
 
 interface GameCardProps {
-  game: Game
+  game: Game & { status?: number } // Add optional status property
   onAddGame?: (game: Game) => void
   showAddButton?: boolean
 }
@@ -39,6 +40,54 @@ export default function GameCard({
     }
   }
 
+  const getStatusBadge = () => {
+    if (!game.status) return null
+
+    const statusConfig = {
+      [GameListType.PLAYING]: {
+        label: "Playing",
+        bgColor: "bg-green-500",
+        textColor: "text-white",
+      },
+      [GameListType.COMPLETED]: {
+        label: "Completed",
+        bgColor: "bg-blue-500",
+        textColor: "text-white",
+      },
+      [GameListType.ON_HOLD]: {
+        label: "On Hold",
+        bgColor: "bg-yellow-500",
+        textColor: "text-black",
+      },
+      [GameListType.DROPPED]: {
+        label: "Dropped",
+        bgColor: "bg-red-500",
+        textColor: "text-white",
+      },
+      [GameListType.PLAN_TO_PLAY]: {
+        label: "Plan to Play",
+        bgColor: "bg-purple-500",
+        textColor: "text-white",
+      },
+    }
+
+    const config = statusConfig[game.status as GameListType]
+    if (!config) return null
+
+    return (
+      <div className="absolute top-3 right-3 z-10">
+        <span
+          className={`
+          px-2 py-1 rounded-full text-xs font-semibold shadow-lg
+          ${config.bgColor} ${config.textColor}
+        `}
+        >
+          {config.label}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div
       data-testid="game-card"
@@ -60,7 +109,7 @@ export default function GameCard({
           </div>
         )}
 
-        {/* Metacritic Score */}
+        {/* Metacritic Score - Always in top left */}
         {game.metacritic && (
           <div className="absolute top-3 left-3">
             <div
@@ -77,14 +126,17 @@ export default function GameCard({
           </div>
         )}
 
-        {/* Add Button */}
-        {showAddButton && (
+        {/* Status Badge - Top right when present */}
+        {getStatusBadge()}
+
+        {/* Add Button - Only show if game is not in user's list */}
+        {showAddButton && !game.status && (
           <div className="absolute top-3 right-3">
             {session?.user ? (
               <button
                 onClick={handleAddClick}
                 className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 transform hover:scale-110"
-                title="Add to your library"
+                title="Add to your list"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -92,7 +144,7 @@ export default function GameCard({
               <button
                 onClick={handleAddClick}
                 className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 text-xs font-medium"
-                title="Sign in to add to library"
+                title="Sign in to add to list"
               >
                 Sign in
               </button>
@@ -100,8 +152,8 @@ export default function GameCard({
           </div>
         )}
 
-        {/* Overlay for non-authenticated users */}
-        {showAddButton && !session?.user && (
+        {/* Overlay for non-authenticated users - Only show if game is not in list */}
+        {showAddButton && !session?.user && !game.status && (
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-t-xl flex items-center justify-center">
             <button
               onClick={handleAddClick}

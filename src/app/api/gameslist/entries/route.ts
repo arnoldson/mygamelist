@@ -1,11 +1,9 @@
 // app/api/gameslist/entries/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma"
 
 // Helper to get status label from enum value
 const getStatusLabel = (status: GameListType): string => {

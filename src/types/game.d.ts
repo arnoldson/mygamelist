@@ -12,6 +12,8 @@ export interface Game {
   playtime: number
   genres: Genre[]
   platforms: GamePlatform[]
+  // optinal field added when user's game list has a matching game
+  status?: GameListType
 }
 
 export interface Genre {

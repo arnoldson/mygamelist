@@ -63,4 +63,5 @@ model GameEntry {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, rawgGameId])
+  @@index([userId, rawgGameId])
 }
