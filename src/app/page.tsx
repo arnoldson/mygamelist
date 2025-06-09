@@ -8,13 +8,9 @@ import {
   Star,
   Trophy,
   Users,
-  Play,
-  Calendar,
   BarChart3,
   ArrowRight,
   Target,
-  Clock,
-  CheckCircle2,
 } from "lucide-react"
 
 interface Feature {
@@ -22,13 +18,6 @@ interface Feature {
   title: string
   description: string
   color: string
-}
-
-interface StatusCard {
-  status: string
-  count: string
-  color: string
-  icon: React.ReactNode
 }
 
 export default function HomePage() {
@@ -60,33 +49,6 @@ export default function HomePage() {
       title: "Gaming Stats",
       description: "View detailed statistics about your gaming habits",
       color: "from-purple-500 to-pink-600",
-    },
-  ]
-
-  const statusCards: StatusCard[] = [
-    {
-      status: "Playing",
-      count: "12",
-      color: "bg-green-500",
-      icon: <Play className="w-5 h-5" />,
-    },
-    {
-      status: "Completed",
-      count: "47",
-      color: "bg-blue-500",
-      icon: <CheckCircle2 className="w-5 h-5" />,
-    },
-    {
-      status: "Plan to Play",
-      count: "23",
-      color: "bg-purple-500",
-      icon: <Calendar className="w-5 h-5" />,
-    },
-    {
-      status: "On Hold",
-      count: "8",
-      color: "bg-yellow-500",
-      icon: <Clock className="w-5 h-5" />,
     },
   ]
 
