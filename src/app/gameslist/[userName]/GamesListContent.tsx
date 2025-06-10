@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { STATUS_CONFIG } from "./page"
+
 import {
   Star,
   Clock,
@@ -21,6 +21,7 @@ import { GameListType } from "@/types/enums"
 import { useGameEntry } from "@/hooks/useGameEntry"
 import GameEntryForm from "@/components/GameEntryForm"
 import { deepCopy } from "@/lib/utils"
+import { STATUS_CONFIG } from "@/types/constants"
 
 interface GameEntry {
   id: string
