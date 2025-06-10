@@ -65,7 +65,7 @@ export default function Navbar() {
                   <span className="hidden sm:inline">Dashboard</span>
                 </Link>
                 <div className="text-gray-300 text-sm hidden md:block">
-                  Welcome, {session.user.name || session.user.email}
+                  Welcome, {session.user.username || session.user.email}
                 </div>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
