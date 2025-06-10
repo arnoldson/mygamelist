@@ -2,8 +2,8 @@
 
 import React from "react"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
-import { Gamepad2, Search, User } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { Gamepad2, Search, User, LogOut, List } from "lucide-react"
 
 export default function Navbar() {
   const { data: session, status } = useSession()
@@ -22,14 +22,16 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-6">
-            {/* Search Link */}
-            <Link
-              href="/games/search"
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Search</span>
-            </Link>
+            {/* Search Link - Only show for unauthenticated users */}
+            {!session?.user && (
+              <Link
+                href="/games/search"
+                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline">Search</span>
+              </Link>
+            )}
 
             {/* Conditional Auth Links */}
             {status === "loading" ? (
@@ -42,15 +44,37 @@ export default function Navbar() {
               // Authenticated user
               <div className="flex items-center gap-4">
                 <Link
+                  href="/games/search"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
+                >
+                  <Search className="w-4 h-4" />
+                  <span className="hidden sm:inline">Search</span>
+                </Link>
+                <Link
+                  href={`/gameslist/${session.user.username}`}
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
+                >
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">My List</span>
+                </Link>
+                <Link
                   href="/dashboard"
                   className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">Dashboard</span>
                 </Link>
-                <div className="text-gray-300 text-sm">
+                <div className="text-gray-300 text-sm hidden md:block">
                   Welcome, {session.user.name || session.user.email}
                 </div>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="flex items-center gap-2 text-gray-300 hover:text-red-400 transition-colors px-3 py-2 rounded-lg hover:bg-red-500/10 font-medium"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
               </div>
             ) : (
               // Unauthenticated user
