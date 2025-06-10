@@ -6,12 +6,12 @@ import GamesListContent from "./GamesListContent"
 import { GameListType } from "@/types/enums"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     userName: string
-  }
-  searchParams: {
+  }>
+  searchParams: Promise<{
     status?: string
-  }
+  }>
 }
 
 // Status mapping for display using the enum
@@ -59,11 +59,12 @@ export const STATUS_CONFIG = {
 } as const
 
 // Helper to validate status parameter
-const isValidStatus = (
-  status: string
-): status is keyof typeof STATUS_CONFIG => {
+const isValidStatus = (status: string): boolean => {
   const numStatus = parseInt(status)
-  return Object.values(GameListType).includes(numStatus)
+  return (
+    !isNaN(numStatus) &&
+    Object.values(GameListType).includes(numStatus as GameListType)
+  )
 }
 
 export default async function GamesListPage({

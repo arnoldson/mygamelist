@@ -6,9 +6,9 @@ import { GameListType } from "@/types/enums"
 import prisma from "@/lib/prisma"
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     entryId: string
-  }
+  }>
 }
 
 // Define the shape of valid update data
