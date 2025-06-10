@@ -40,6 +40,7 @@ export default function LoginPage() {
       router.push("/dashboard")
     } catch (error) {
       setError("Something went wrong. Please try again.")
+      console.error("Login error:", error)
       setLoading(false)
     }
   }
@@ -174,7 +175,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
+              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>

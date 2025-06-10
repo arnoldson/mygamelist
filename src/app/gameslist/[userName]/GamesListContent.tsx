@@ -242,7 +242,7 @@ export default function GamesListContent({
     if (!editModal.gameEntry) return
 
     try {
-      const result = await updateEntry(editModal.gameEntry.id, formData)
+      await updateEntry(editModal.gameEntry.id, formData)
 
       // Update local state with the updated entry
       setData((prevData) => {

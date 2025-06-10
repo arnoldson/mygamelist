@@ -51,12 +51,7 @@ export default function GamesSearchPage() {
   })
 
   const { data: session } = useSession()
-  const {
-    createEntry,
-    isLoading: isCreating,
-    error: createError,
-    clearError,
-  } = useGameEntry()
+  const { createEntry, isLoading: isCreating, clearError } = useGameEntry()
 
   // Add toast hook
   const { toasts, addToast, removeToast } = useToast()
@@ -141,9 +136,10 @@ export default function GamesSearchPage() {
       const gameData = {
         title: addModal.game.name,
         rawgGameId: addModal.game.id,
-        ...formData,
+        status: GameListType.PLAN_TO_PLAY, // Default status
+        ...formData, // This will override the default if formData.status is provided
       }
-      const result = await createEntry(gameData)
+      await createEntry(gameData)
 
       // Close the modal on success
       setAddModal({
@@ -185,7 +181,7 @@ export default function GamesSearchPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Game Search
           </h1>
           <p className="text-gray-300 text-lg">

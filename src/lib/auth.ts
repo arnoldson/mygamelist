@@ -1,11 +1,12 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
+import { Adapter } from "next-auth/adapters"
 import bcrypt from "bcryptjs"
 import prisma from "@/lib/prisma"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -24,7 +25,7 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        if (!user || !user.password) {
+        if (!user || !user.password || !user.email || !user.username) {
           return null
         }
 
@@ -40,7 +41,8 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          username: user.username,
+          name: user.username,
+          username: user.username, // Required by custom User type
           image: user.image,
         }
       },

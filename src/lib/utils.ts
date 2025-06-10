@@ -71,7 +71,7 @@ export function deepCopyJSON<T>(obj: T): T {
  * @param source - The source object to merge from
  * @returns A new object with merged properties
  */
-export function deepMerge<T extends Record<string, any>>(
+export function deepMerge<T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>
 ): T {
@@ -91,10 +91,13 @@ export function deepMerge<T extends Record<string, any>>(
         !Array.isArray(targetValue)
       ) {
         // Recursively merge nested objects
-        result[key] = deepMerge(targetValue, sourceValue)
+        result[key] = deepMerge(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        ) as T[Extract<keyof T, string>]
       } else {
         // Overwrite or set the value
-        result[key] = deepCopy(sourceValue)
+        result[key] = deepCopy(sourceValue) as T[Extract<keyof T, string>]
       }
     }
   }

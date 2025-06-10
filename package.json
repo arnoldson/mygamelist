@@ -11,7 +11,12 @@
     "db:teardown:test": "bash scripts/teardown-test-db.sh",
     "test:playwright": "DATABASE_URL='postgresql://postgres:postgres@localhost:5433/mygamelist_test' playwright test",
     "test": "npm run db:setup:test && npm run test:playwright && npm run db:teardown:test",
-    "test:ci": "npm run db:setup:test && npm run test:playwright"
+    "test:ci": "npm run db:setup:test && npm run test:playwright",
+    "db:teardown": "docker-compose -f docker-compose.yml -p mygamelist down -v",
+    "db:setup": "docker-compose -f docker-compose.yml -p mygamelist up -d",
+    "db:push": "npx prisma db push",
+    "prisma:generate": "npx prisma generate",
+    "db:seed": "npx prisma db seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

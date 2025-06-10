@@ -1,6 +1,6 @@
 // app/api/gameslist/[userName]/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, Prisma } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
@@ -112,8 +112,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       updatedAt: true,
     }
 
-    // Build where clause for game entries
-    const gameEntryWhere: any = {
+    // Build where clause for game entries with proper typing
+    const gameEntryWhere: Prisma.GameEntryWhereInput = {
       userId: user.id,
     }
 
@@ -184,8 +184,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Handle single status request
     if (status) {
-      const statusNumber = parseInt(status)
-
       return NextResponse.json({
         user: {
           username: user.username,
@@ -363,11 +361,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       {
         success: true,
-        message: `Successfully deleted "${
-          deletedEntryInfo.title
-        }" from your ${deletedEntryInfo.status
-          .toLowerCase()
-          .replace("_", " ")} list`,
+        message: `Successfully deleted "${deletedEntryInfo.title}" from your ${deletedEntryInfo.status} list`,
         deletedEntry: deletedEntryInfo,
         user: {
           username: authenticatedUser.username,
@@ -375,11 +369,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting game entry:", error)
 
     // Handle specific Prisma errors
-    if (error.code === "P2025") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
       return NextResponse.json(
         {
           error: {

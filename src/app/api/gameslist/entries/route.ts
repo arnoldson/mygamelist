@@ -5,6 +5,19 @@ import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
 import prisma from "@/lib/prisma"
 
+// Define the shape of game entry creation data
+interface GameEntryCreateData {
+  title: string
+  rawgGameId: number
+  userId: string
+  status: GameListType
+  rating?: number
+  review?: string
+  hoursPlayed?: number
+  startedAt?: string | null
+  completedAt?: string | null
+}
+
 // Helper to get status label from enum value
 const getStatusLabel = (status: GameListType): string => {
   switch (status) {
@@ -110,8 +123,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare data for creation
-    const gameData: any = {
+    // Prepare data for creation with proper typing
+    const gameData: GameEntryCreateData = {
       title: body.title.trim(),
       rawgGameId: body.rawgGameId,
       userId: authenticatedUser.id,
@@ -123,7 +136,7 @@ export async function POST(request: NextRequest) {
       const statusValue = parseInt(body.status)
       const validStatuses = Object.values(GameListType).filter(
         (value) => typeof value === "number"
-      )
+      ) as number[]
 
       if (isNaN(statusValue) || !validStatuses.includes(statusValue)) {
         return NextResponse.json(
@@ -138,7 +151,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      gameData.status = statusValue
+      gameData.status = statusValue as GameListType
     }
 
     if ("rating" in body) {
@@ -315,11 +328,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating game entry:", error)
 
     // Handle specific Prisma errors
-    if (error.code === "P2002") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
       return NextResponse.json(
         {
           error: {

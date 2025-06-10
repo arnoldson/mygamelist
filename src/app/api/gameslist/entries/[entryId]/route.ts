@@ -1,16 +1,24 @@
 // app/api/gameslist/entries/[entryId]/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma"
 
 interface RouteParams {
   params: {
     entryId: string
   }
+}
+
+// Define the shape of valid update data
+interface GameEntryUpdateData {
+  status?: GameListType
+  rating?: number
+  review?: string
+  hoursPlayed?: number
+  startedAt?: string | null
+  completedAt?: string | null
 }
 
 // Helper to get status label from enum value
@@ -97,15 +105,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Parse and validate request body
     const body = await request.json()
-    const allowedFields = [
-      "status",
-      "rating",
-      "review",
-      "hoursPlayed",
-      "startedAt",
-      "completedAt",
-    ]
-    const updates: any = {}
+    const updates: GameEntryUpdateData = {}
 
     // Validation logic
     let hasUpdate = false
@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // Get all numeric values from the enum
       const validStatuses = Object.values(GameListType).filter(
         (value) => typeof value === "number"
-      )
+      ) as number[]
 
       if (isNaN(statusValue) || !validStatuses.includes(statusValue)) {
         return NextResponse.json(
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         )
       }
 
-      updates.status = statusValue
+      updates.status = statusValue as GameListType
       hasUpdate = true
     }
     if ("rating" in body) {
@@ -304,7 +304,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating game entry:", error)
     return NextResponse.json(
       { error: { message: "Internal server error", code: "INTERNAL_ERROR" } },
@@ -430,12 +430,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting game entry:", error)
     console.log("Error details:", error)
 
     // Handle specific Prisma errors
-    if (error.code === "P2025") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
       return NextResponse.json(
         {
           error: {
