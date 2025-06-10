@@ -19,9 +19,9 @@ const STATUS_MAP = {
 type StatusKey = keyof typeof STATUS_MAP
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     userName: string
-  }
+  }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
