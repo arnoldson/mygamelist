@@ -197,7 +197,7 @@ export default function HomePage() {
             with MyGameList
           </p>
           <Link
-            href="/signup"
+            href="/register"
             className="group px-10 py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto w-fit"
           >
             <Gamepad2 className="w-6 h-6" />
