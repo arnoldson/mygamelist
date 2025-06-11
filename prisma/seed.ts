@@ -1,9 +1,7 @@
 // prisma/seed.ts
+import prisma from "@/lib/prisma"
 import { GameListType } from "@/types/enums"
-import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
-
-const prisma = new PrismaClient()
 
 // Export test user data for use in tests
 export const TEST_USER = {

@@ -1,11 +1,10 @@
 // app/api/gameslist/[userName]/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient, Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma"
 
 // Reverse mapping from enum values to names for validation
 const STATUS_MAP = {
