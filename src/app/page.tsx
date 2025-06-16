@@ -215,32 +215,6 @@ export default function HomePage() {
               <Gamepad2 className="w-8 h-8 text-purple-400" />
               <span className="text-xl font-bold text-white">MyGameList</span>
             </div>
-            <div className="flex gap-8 text-gray-400">
-              <Link
-                href="/about"
-                className="hover:text-white transition-colors"
-              >
-                About
-              </Link>
-              <Link
-                href="/features"
-                className="hover:text-white transition-colors"
-              >
-                Features
-              </Link>
-              <Link
-                href="/support"
-                className="hover:text-white transition-colors"
-              >
-                Support
-              </Link>
-              <Link
-                href="/privacy"
-                className="hover:text-white transition-colors"
-              >
-                Privacy
-              </Link>
-            </div>
           </div>
           <div className="mt-8 pt-8 border-t border-white/10 text-center text-gray-400">
             <p>&copy; 2025 MyGameList. All rights reserved.</p>
