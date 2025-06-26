@@ -399,7 +399,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
             onChange={(e) =>
               handleInputChange("hoursPlayed", parseFloat(e.target.value) || 0)
             }
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
             placeholder="0"
           />
         </div>
@@ -426,7 +426,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
             id="startedAt"
             value={formData.startedAt}
             onChange={(e) => handleInputChange("startedAt", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
           />
         </div>
       </div>
@@ -449,7 +449,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
             id="completedAt"
             value={formData.completedAt}
             onChange={(e) => handleInputChange("completedAt", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
           />
         </div>
         {errors.completedAt && (
@@ -476,7 +476,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
             maxLength={1000}
             value={formData.review}
             onChange={(e) => handleInputChange("review", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700 placeholder:text-gray-400"
             placeholder="Write your thoughts about this game..."
           />
         </div>
