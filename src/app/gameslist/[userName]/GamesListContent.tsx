@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 
-import { Star, Clock, User, Trash2, X } from "lucide-react"
+import { Star, Clock, User, Trash2, X, ArrowUp, ArrowDown } from "lucide-react"
 import GamesListSkeleton from "./GamesListSkeleton"
 import GameListItem from "./GameListItem"
 import { useSession } from "next-auth/react"
@@ -14,6 +14,10 @@ import { useGameEntry } from "@/hooks/useGameEntry"
 import GameEntryForm from "@/components/GameEntryForm"
 import { deepCopy } from "@/lib/utils"
 import { STATUS_CONFIG } from "@/types/constants"
+
+// Sort options
+type SortOption = "title" | "rating" | "hoursPlayed" | "addedAt"
+type SortOrder = "asc" | "desc"
 
 interface GameEntry {
   id: string
@@ -80,7 +84,6 @@ function DeleteConfirmationModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">Delete Game</h3>
           <button
@@ -92,7 +95,6 @@ function DeleteConfirmationModal({
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -118,7 +120,6 @@ function DeleteConfirmationModal({
           </p>
         </div>
 
-        {/* Modal Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
           <button
             onClick={onClose}
@@ -157,6 +158,11 @@ export default function GamesListContent({
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Sorting state
+  const [sortBy, setSortBy] = useState<SortOption>("addedAt")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
+
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean
     gameEntry: GameEntry | null
@@ -167,7 +173,6 @@ export default function GamesListContent({
     isDeleting: false,
   })
 
-  // Edit modal state
   const [editModal, setEditModal] = useState<EditModalState>({
     isOpen: false,
     gameEntry: null,
@@ -182,10 +187,64 @@ export default function GamesListContent({
     clearError,
   } = useGameEntry()
 
-  // Check if current user can modify entries (owns this profile)
   const canModify = session?.user?.username === userName
 
-  // Fetch games list data from internal API
+  // Sort function
+  const sortGames = (
+    games: GameEntry[],
+    sortBy: SortOption,
+    sortOrder: SortOrder
+  ): GameEntry[] => {
+    const sorted = [...games].sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+
+      switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "rating":
+          aValue = a.rating || 0
+          bValue = b.rating || 0
+          break
+        case "hoursPlayed":
+          aValue = a.hoursPlayed || 0
+          bValue = b.hoursPlayed || 0
+          break
+        case "addedAt":
+        default:
+          aValue = new Date(a.addedAt).getTime()
+          bValue = new Date(b.addedAt).getTime()
+          break
+      }
+
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1
+      return 0
+    })
+
+    return sorted
+  }
+
+  // Handle sort change
+  const handleSortChange = (newSortBy: SortOption) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(newSortBy)
+      setSortOrder(newSortBy === "title" ? "asc" : "desc")
+    }
+  }
+
+  // Get sorted games
+  const getSortedGames = (gameLists: GameList[]): GameEntry[] => {
+    const allGames = gameLists.flatMap((list) => list.gameEntries)
+    const sortedGames = sortGames(allGames, sortBy, sortOrder)
+    return sortedGames
+  }
+
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -221,23 +280,22 @@ export default function GamesListContent({
     fetchData()
   }, [userName, status])
 
-  // Handle edit game entry
+  // Handle edit
   const handleEditGame = (gameEntry: GameEntry) => {
-    clearError() // Clear any previous errors
+    clearError()
     setEditModal({
       isOpen: true,
       gameEntry,
     })
   }
 
-  // Handle save from edit modal
+  // Handle save edit
   const handleSaveEdit = async (formData: Partial<GameEntry>) => {
     if (!editModal.gameEntry) return
 
     try {
       await updateEntry(editModal.gameEntry.id, formData)
 
-      // Update local state with the updated entry
       setData((prevData) => {
         if (!prevData) return prevData
 
@@ -246,22 +304,17 @@ export default function GamesListContent({
           ...formData,
         } as GameEntry
 
-        // Deep copy to avoid mutating original state
         const updatedStateData = deepCopy(prevData)
-
         const oldStatus = editModal.gameEntry!.status
         const newStatus = updatedEntry.status
 
         if (updatedStateData.gameList) {
           if (oldStatus !== newStatus) {
-            // Status changed - move entry between lists
             updatedStateData.gameList.gameEntries =
               updatedStateData.gameList.gameEntries.filter(
                 (entry) => entry.id !== editModal.gameEntry!.id
               )
           } else {
-            // Status unchanged - just update the entry
-            // Single list view
             updatedStateData.gameList.gameEntries =
               updatedStateData.gameList.gameEntries.map((entry) =>
                 entry.id === editModal.gameEntry!.id ? updatedEntry : entry
@@ -270,14 +323,10 @@ export default function GamesListContent({
         }
 
         if (updatedStateData.gameLists) {
-          // Multiple lists view
-
           if (oldStatus !== newStatus) {
-            // Status changed - move entry between lists
             updatedStateData.gameLists = updatedStateData.gameLists.map(
               (gameList) => {
                 if (gameList.status === oldStatus) {
-                  // Remove from old list
                   return {
                     ...gameList,
                     gameEntries: gameList.gameEntries.filter(
@@ -285,17 +334,14 @@ export default function GamesListContent({
                     ),
                   }
                 } else if (gameList.status === newStatus) {
-                  // Add to new list (or update if already there)
                   const existingIndex = gameList.gameEntries.findIndex(
                     (entry) => entry.id === editModal.gameEntry!.id
                   )
                   if (existingIndex >= 0) {
-                    // Update existing entry
                     const newEntries = [...gameList.gameEntries]
                     newEntries[existingIndex] = updatedEntry
                     return { ...gameList, gameEntries: newEntries }
                   } else {
-                    // Add new entry
                     return {
                       ...gameList,
                       gameEntries: [...gameList.gameEntries, updatedEntry],
@@ -306,7 +352,6 @@ export default function GamesListContent({
               }
             )
           } else {
-            // Status unchanged - just update the entry
             updatedStateData.gameLists = updatedStateData.gameLists.map(
               (gameList) => ({
                 ...gameList,
@@ -318,7 +363,6 @@ export default function GamesListContent({
           }
         }
 
-        // Update metadata (hours played might have changed)
         const hoursDiff =
           (updatedEntry.hoursPlayed || 0) -
           (editModal.gameEntry!.hoursPlayed || 0)
@@ -330,7 +374,6 @@ export default function GamesListContent({
         }
 
         if (oldStatus !== newStatus) {
-          // Update list counts if available
           if (updatedStateData.meta.listCounts) {
             updatedStateData.meta.listCounts = {
               ...updatedStateData.meta.listCounts,
@@ -343,18 +386,16 @@ export default function GamesListContent({
         return updatedStateData
       })
 
-      // Close the modal
       setEditModal({
         isOpen: false,
         gameEntry: null,
       })
     } catch (err) {
-      // Error is handled by the hook and will be shown in the form
       console.error("Failed to update game entry:", err)
     }
   }
 
-  // Handle close edit modal
+  // Handle close edit
   const handleCloseEdit = () => {
     clearError()
     setEditModal({
@@ -363,7 +404,7 @@ export default function GamesListContent({
     })
   }
 
-  // Handle delete game entry
+  // Handle delete
   const handleDeleteGame = async (gameEntry: GameEntry) => {
     setDeleteModal({
       isOpen: true,
@@ -394,19 +435,14 @@ export default function GamesListContent({
       }
 
       const result = await response.json()
-
-      // Show success message (you can replace this with a toast notification)
       console.log(result.message)
 
-      // Update the local state to remove the deleted entry
       setData((prevData) => {
         if (!prevData) return prevData
 
-        // Update the data by removing the deleted entry
         const updatedData = { ...prevData }
 
         if (updatedData.gameList) {
-          // Single list view
           updatedData.gameList.gameEntries =
             updatedData.gameList.gameEntries.filter(
               (entry) => entry.id !== deleteModal.gameEntry!.id
@@ -414,7 +450,6 @@ export default function GamesListContent({
         }
 
         if (updatedData.gameLists) {
-          // Multiple lists view
           updatedData.gameLists = updatedData.gameLists.map((gameList) => ({
             ...gameList,
             gameEntries: gameList.gameEntries.filter(
@@ -423,7 +458,6 @@ export default function GamesListContent({
           }))
         }
 
-        // Update metadata
         updatedData.meta = {
           ...updatedData.meta,
           totalGames: updatedData.meta.totalGames - 1,
@@ -432,7 +466,6 @@ export default function GamesListContent({
             (deleteModal.gameEntry!.hoursPlayed || 0),
         }
 
-        // Update list counts if available
         if (updatedData.meta.listCounts && deleteModal.gameEntry) {
           const deletedEntryStatus = deleteModal.gameEntry.status
           if (updatedData.meta.listCounts[deletedEntryStatus] > 0) {
@@ -443,7 +476,6 @@ export default function GamesListContent({
         return updatedData
       })
 
-      // Close the modal
       setDeleteModal({
         isOpen: false,
         gameEntry: null,
@@ -457,7 +489,7 @@ export default function GamesListContent({
   }
 
   const closeDeleteModal = () => {
-    if (deleteModal.isDeleting) return // Prevent closing while deleting
+    if (deleteModal.isDeleting) return
     setDeleteModal({
       isOpen: false,
       gameEntry: null,
@@ -465,7 +497,7 @@ export default function GamesListContent({
     })
   }
 
-  // Handle status filter change
+  // Handle status change
   const handleStatusChange = (newStatus?: string) => {
     const params = new URLSearchParams()
 
@@ -560,37 +592,121 @@ export default function GamesListContent({
         </div>
       </div>
 
-      {/* Status Filter */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-lg font-semibold mb-4">Filter by Status</h2>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => handleStatusChange()}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-              !status
-                ? "bg-gray-900 text-white shadow-md"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            All Lists ({data.meta.totalGames})
-          </button>
-          {Object.entries(STATUS_CONFIG).map(([statusValue, config]) => {
-            const count = data.meta.listCounts?.[config.value] || 0
-            const isActive = status === statusValue
-            return (
-              <button
-                key={statusValue}
-                onClick={() => handleStatusChange(statusValue)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? `${config.color} text-white shadow-md transform scale-105`
-                    : `${config.bgLight} ${config.textColor} hover:scale-105`
-                }`}
-              >
-                {config.label} ({count})
-              </button>
-            )
-          })}
+      {/* Status Filter and Sorting */}
+      <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
+        {/* Status Filter */}
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Filter by Status</h2>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => handleStatusChange()}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                !status
+                  ? "bg-gray-900 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All Lists ({data.meta.totalGames})
+            </button>
+            {Object.entries(STATUS_CONFIG).map(([statusValue, config]) => {
+              const gameCount = data.meta.listCounts?.[config.value] || 0
+              const isActive = status === statusValue
+              return (
+                <button
+                  key={statusValue}
+                  onClick={() => handleStatusChange(statusValue)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? `${config.color} text-white shadow-md transform scale-105`
+                      : `${config.bgLight} ${config.textColor} hover:scale-105`
+                  }`}
+                >
+                  {config.label} ({gameCount})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Sorting Controls */}
+        <div className="border-t pt-4">
+          <h3 className="text-md font-semibold mb-3">Sort by</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleSortChange("title")}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                sortBy === "title"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <span>Title</span>
+              {sortBy === "title" &&
+                (sortOrder === "asc" ? (
+                  <ArrowUp className="w-4 h-4" />
+                ) : (
+                  <ArrowDown className="w-4 h-4" />
+                ))}
+            </button>
+
+            <button
+              onClick={() => handleSortChange("rating")}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                sortBy === "rating"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              <span>Rating</span>
+              {sortBy === "rating" &&
+                (sortOrder === "asc" ? (
+                  <ArrowUp className="w-4 h-4" />
+                ) : (
+                  <ArrowDown className="w-4 h-4" />
+                ))}
+            </button>
+
+            <button
+              onClick={() => handleSortChange("hoursPlayed")}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                sortBy === "hoursPlayed"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>Hours</span>
+              {sortBy === "hoursPlayed" &&
+                (sortOrder === "asc" ? (
+                  <ArrowUp className="w-4 h-4" />
+                ) : (
+                  <ArrowDown className="w-4 h-4" />
+                ))}
+            </button>
+
+            <button
+              onClick={() => handleSortChange("addedAt")}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                sortBy === "addedAt"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <span>Date Added</span>
+              {sortBy === "addedAt" &&
+                (sortOrder === "asc" ? (
+                  <ArrowUp className="w-4 h-4" />
+                ) : (
+                  <ArrowDown className="w-4 h-4" />
+                ))}
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-2">
+            Click the same sort option to toggle between ascending and
+            descending order
+          </p>
         </div>
       </div>
 
@@ -629,52 +745,28 @@ export default function GamesListContent({
           {/* Games List */}
           <div className="divide-y divide-gray-200">
             {(() => {
-              // Collect all games from all lists
-              const allGames = currentGameLists.flatMap(
-                (list) => list.gameEntries
-              )
+              const sortedGames = getSortedGames(currentGameLists)
 
-              // Group by status and sort within each group by addedAt (most recent first)
-              const gamesByStatus = allGames.reduce((groups, game) => {
-                const status = game.status
-                if (!groups[status]) {
-                  groups[status] = []
-                }
-                groups[status].push(game)
-                return groups
-              }, {} as Record<GameListType, GameEntry[]>)
-
-              // Sort each group by addedAt (most recent first)
-              Object.keys(gamesByStatus).forEach((status) => {
-                gamesByStatus[status as unknown as GameListType].sort(
-                  (a, b) =>
-                    new Date(b.addedAt).getTime() -
-                    new Date(a.addedAt).getTime()
+              if (sortedGames.length === 0) {
+                return (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="text-gray-500 italic">
+                      No games in this list
+                    </p>
+                  </div>
                 )
-              })
+              }
 
-              // Define status order for grouping
-              const statusOrder = [
-                GameListType.PLAYING,
-                GameListType.PLAN_TO_PLAY,
-                GameListType.COMPLETED,
-                GameListType.ON_HOLD,
-                GameListType.DROPPED,
-              ]
-
-              // Render games grouped by status
-              return statusOrder.flatMap(
-                (statusType) =>
-                  gamesByStatus[statusType]?.map((entry) => (
-                    <GameListItem
-                      key={entry.id}
-                      entry={entry}
-                      canModify={canModify}
-                      onEdit={handleEditGame}
-                      onDelete={handleDeleteGame}
-                    />
-                  )) || []
-              )
+              return sortedGames.map((entry) => (
+                <GameListItem
+                  key={entry.id}
+                  entry={entry}
+                  canModify={canModify}
+                  onEdit={handleEditGame}
+                  onDelete={handleDeleteGame}
+                />
+              ))
             })()}
           </div>
         </div>
@@ -719,7 +811,7 @@ export default function GamesListContent({
         isDeleting={deleteModal.isDeleting}
       />
 
-      {/* Optional: Update Error Toast */}
+      {/* Update Error Toast */}
       {updateError && (
         <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-[60]">
           <div className="flex items-center max-w-sm">

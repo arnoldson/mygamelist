@@ -64,25 +64,28 @@ export default function GameListItem({
   // Get status config for this entry
   const statusConfig = STATUS_CONFIG[entry.status]
 
+  // Get border color
+  const getBorderColor = () => {
+    switch (statusConfig.color) {
+      case "bg-green-500":
+        return "#10b981"
+      case "bg-blue-500":
+        return "#3b82f6"
+      case "bg-purple-500":
+        return "#8b5cf6"
+      case "bg-yellow-500":
+        return "#eab308"
+      case "bg-red-500":
+        return "#ef4444"
+      default:
+        return "#6b7280"
+    }
+  }
+
   return (
     <div
       className="relative group border-l-4"
-      style={{
-        borderLeftColor:
-          statusConfig.color.replace("bg-", "#") === statusConfig.color
-            ? statusConfig.color === "bg-green-500"
-              ? "#10b981"
-              : statusConfig.color === "bg-blue-500"
-              ? "#3b82f6"
-              : statusConfig.color === "bg-purple-500"
-              ? "#8b5cf6"
-              : statusConfig.color === "bg-yellow-500"
-              ? "#eab308"
-              : statusConfig.color === "bg-red-500"
-              ? "#ef4444"
-              : "#6b7280"
-            : statusConfig.color,
-      }}
+      style={{ borderLeftColor: getBorderColor() }}
     >
       {/* Main Row */}
       <div className="p-4 hover:bg-gray-50 transition-colors">
