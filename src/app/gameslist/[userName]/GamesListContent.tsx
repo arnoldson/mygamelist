@@ -5,17 +5,9 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 
-import {
-  Star,
-  Clock,
-  Calendar,
-  MessageSquare,
-  User,
-  Trash2,
-  Edit3,
-  X,
-} from "lucide-react"
+import { Star, Clock, User, Trash2, X } from "lucide-react"
 import GamesListSkeleton from "./GamesListSkeleton"
+import GameListItem from "./GameListItem"
 import { useSession } from "next-auth/react"
 import { GameListType } from "@/types/enums"
 import { useGameEntry } from "@/hooks/useGameEntry"
@@ -489,32 +481,6 @@ export default function GamesListContent({
     router.push(newUrl)
   }
 
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  // Render stars for rating
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center space-x-1">
-        {[...Array(10)].map((_, i) => (
-          <Star
-            key={i}
-            className={`w-3 h-3 ${
-              i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
-            }`}
-          />
-        ))}
-        <span className="text-sm font-medium ml-1">{rating}/10</span>
-      </div>
-    )
-  }
-
   if (loading) return <GamesListSkeleton />
 
   if (error) {
@@ -641,153 +607,78 @@ export default function GamesListContent({
         </div>
       )}
 
-      {currentGameLists.map((gameList) => {
-        const statusConfig = STATUS_CONFIG[gameList.status]
-
-        return (
-          <div
-            key={gameList.type}
-            className="bg-white rounded-lg shadow-sm border overflow-hidden"
-          >
-            {/* List Header */}
-            <div className={`${statusConfig.bgLight} border-b px-6 py-4`}>
-              <div className="flex items-center space-x-3">
-                <div
-                  className={`w-4 h-4 rounded-full ${statusConfig.color}`}
-                ></div>
-                <h2
-                  className={`text-xl font-semibold ${statusConfig.textColor}`}
-                >
-                  {statusConfig.label}
-                </h2>
-                <span className="text-gray-500 bg-white px-2 py-1 rounded-full text-sm">
-                  {gameList.gameEntries.length} games
-                </span>
-              </div>
-            </div>
-
-            {/* Games Grid */}
-            <div className="p-6">
-              {gameList.gameEntries.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-3">📭</div>
-                  <p className="text-gray-500 italic">No games in this list</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {gameList.gameEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 relative group"
-                    >
-                      {/* Action Buttons (only show for owner) */}
-                      {canModify && (
-                        <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditGame(entry)
-                            }}
-                            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            title="Edit game"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteGame(entry)
-                            }}
-                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            title="Delete game"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Game Header */}
-                      <div className="mb-3">
-                        <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2 pr-20">
-                          {entry.title}
-                        </h3>
-                      </div>
-
-                      {/* Game Stats */}
-                      <div className="space-y-2 mb-3">
-                        {entry.rating && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              Rating:
-                            </span>
-                            {renderStars(entry.rating)}
-                          </div>
-                        )}
-
-                        {entry.hoursPlayed !== undefined &&
-                          entry.hoursPlayed > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">
-                                Hours:
-                              </span>
-                              <span className="text-sm font-medium flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {entry.hoursPlayed}h
-                              </span>
-                            </div>
-                          )}
-
-                        {entry.startedAt && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              Started:
-                            </span>
-                            <span className="text-sm text-gray-800 flex items-center">
-                              <Calendar className="w-3 h-3 mr-1" />
-                              {formatDate(entry.startedAt)}
-                            </span>
-                          </div>
-                        )}
-
-                        {entry.completedAt && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              Completed:
-                            </span>
-                            <span className="text-sm text-green-600 flex items-center font-medium">
-                              <Calendar className="w-3 h-3 mr-1" />
-                              {formatDate(entry.completedAt)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Review */}
-                      {entry.review && (
-                        <div className="border-t pt-3">
-                          <div className="flex items-start space-x-2">
-                            <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-gray-600 line-clamp-3">
-                              {entry.review}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Added Date */}
-                      <div className="mt-3 pt-2 border-t">
-                        <p className="text-xs text-gray-400">
-                          Added {formatDate(entry.addedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+      {/* Single Games List */}
+      {currentGameLists.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          {/* List Header */}
+          <div className="bg-gray-50 border-b px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {status ? currentStatus?.label : "All Games"}
+              </h2>
+              <span className="text-gray-500 bg-white px-2 py-1 rounded-full text-sm">
+                {currentGameLists.reduce(
+                  (total, list) => total + list.gameEntries.length,
+                  0
+                )}{" "}
+                games
+              </span>
             </div>
           </div>
-        )
-      })}
+
+          {/* Games List */}
+          <div className="divide-y divide-gray-200">
+            {(() => {
+              // Collect all games from all lists
+              const allGames = currentGameLists.flatMap(
+                (list) => list.gameEntries
+              )
+
+              // Group by status and sort within each group by addedAt (most recent first)
+              const gamesByStatus = allGames.reduce((groups, game) => {
+                const status = game.status
+                if (!groups[status]) {
+                  groups[status] = []
+                }
+                groups[status].push(game)
+                return groups
+              }, {} as Record<GameListType, GameEntry[]>)
+
+              // Sort each group by addedAt (most recent first)
+              Object.keys(gamesByStatus).forEach((status) => {
+                gamesByStatus[status as unknown as GameListType].sort(
+                  (a, b) =>
+                    new Date(b.addedAt).getTime() -
+                    new Date(a.addedAt).getTime()
+                )
+              })
+
+              // Define status order for grouping
+              const statusOrder = [
+                GameListType.PLAYING,
+                GameListType.PLAN_TO_PLAY,
+                GameListType.COMPLETED,
+                GameListType.ON_HOLD,
+                GameListType.DROPPED,
+              ]
+
+              // Render games grouped by status
+              return statusOrder.flatMap(
+                (statusType) =>
+                  gamesByStatus[statusType]?.map((entry) => (
+                    <GameListItem
+                      key={entry.id}
+                      entry={entry}
+                      canModify={canModify}
+                      onEdit={handleEditGame}
+                      onDelete={handleDeleteGame}
+                    />
+                  )) || []
+              )
+            })()}
+          </div>
+        </div>
+      )}
 
       {status && currentGameLists.length === 0 && (
         <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
