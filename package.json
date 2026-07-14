@@ -16,6 +16,7 @@
     "db:teardown": "docker-compose -f docker-compose.yml -p mygamelist down -v",
     "db:setup": "docker-compose -f docker-compose.yml -p mygamelist up -d",
     "db:push": "npx prisma db push",
+    "db:push:prod": "echo '⚠️  This pushes schema to PRODUCTION Supabase. Ctrl+C to cancel, Enter to continue' && read -r _ && dotenv -e .env.production -- npx prisma db push",
     "prisma:generate": "npx prisma generate",
     "db:seed": "npx prisma db seed"
   },
