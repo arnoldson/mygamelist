@@ -1,12 +1,11 @@
-import { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { Adapter } from "next-auth/adapters"
 import bcrypt from "bcryptjs"
 import prisma from "@/lib/prisma"
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -18,31 +17,24 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
-
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
+          where: { email: credentials.email as string },
         })
-
         if (!user || !user.password || !user.email || !user.username) {
           return null
         }
-
         const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
+          credentials.password as string,
+          user.password,
         )
-
         if (!isValid) {
           return null
         }
-
         return {
           id: user.id,
           email: user.email,
           name: user.username,
-          username: user.username, // Required by custom User type
+          username: user.username,
           image: user.image,
         }
       },
@@ -51,30 +43,23 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
   },
   callbacks: {
-    // Step 1: When creating JWT, fetch and include username
     jwt: async ({ token, user }) => {
-      // On sign in, fetch full user data
       if (user?.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
           select: { id: true, username: true, email: true, image: true },
         })
-
         if (dbUser) {
           token.username = dbUser.username
           token.id = dbUser.id
         }
       }
-
       return token
     },
-
-    // Step 2: When creating session, include username from JWT
     session: async ({ session, token }) => {
       if (token) {
         session.user.id = token.id as string
@@ -83,4 +68,4 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
-}
+})

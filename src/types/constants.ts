@@ -1,11 +1,11 @@
 import { GameListType } from "./enums"
-
 export const STATUS_CONFIG = {
   [GameListType.PLAYING]: {
     label: "Currently Playing",
     color: "bg-green-500",
     textColor: "text-green-700",
     bgLight: "bg-green-50",
+    borderColor: "border-green-200",
     type: "PLAYING",
     value: GameListType.PLAYING,
   },
@@ -14,6 +14,7 @@ export const STATUS_CONFIG = {
     color: "bg-blue-500",
     textColor: "text-blue-700",
     bgLight: "bg-blue-50",
+    borderColor: "border-blue-200",
     type: "PLAN_TO_PLAY",
     value: GameListType.PLAN_TO_PLAY,
   },
@@ -22,6 +23,7 @@ export const STATUS_CONFIG = {
     color: "bg-purple-500",
     textColor: "text-purple-700",
     bgLight: "bg-purple-50",
+    borderColor: "border-purple-200",
     type: "COMPLETED",
     value: GameListType.COMPLETED,
   },
@@ -30,6 +32,7 @@ export const STATUS_CONFIG = {
     color: "bg-yellow-500",
     textColor: "text-yellow-700",
     bgLight: "bg-yellow-50",
+    borderColor: "border-yellow-200",
     type: "ON_HOLD",
     value: GameListType.ON_HOLD,
   },
@@ -38,6 +41,7 @@ export const STATUS_CONFIG = {
     color: "bg-red-500",
     textColor: "text-red-700",
     bgLight: "bg-red-50",
+    borderColor: "border-red-200",
     type: "DROPPED",
     value: GameListType.DROPPED,
   },

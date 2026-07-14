@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { RAWGSearchResponse } from "@/types/game"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { deepCopy } from "@/lib/utils"
 
@@ -36,7 +35,7 @@ async function getUserGameEntries(userId: string, rawgGameIds: number[]) {
 }
 
 async function augmentSearchResults(
-  data: RAWGSearchResponse
+  data: RAWGSearchResponse,
 ): Promise<RAWGSearchResponse | null> {
   try {
     // If no results, return null
@@ -44,7 +43,7 @@ async function augmentSearchResults(
       return null
     }
     // If no user session, return null
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       return null
     }
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
         error: "Server configuration error",
         message: "RAWG API key not configured",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 
@@ -95,7 +94,7 @@ export async function GET(request: NextRequest) {
           error: "Search query is required",
           message: 'Please provide a search term using the "q" parameter',
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -137,7 +136,7 @@ export async function GET(request: NextRequest) {
             error: "Service temporarily unavailable",
             message: "Unable to connect to game database",
           },
-          { status: 503 }
+          { status: 503 },
         )
       }
     }
@@ -148,7 +147,7 @@ export async function GET(request: NextRequest) {
         message:
           error instanceof Error ? error.message : "Unknown error occurred",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

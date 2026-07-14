@@ -1,8 +1,7 @@
 // app/api/gameslist/[userName]/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/auth"
 import { GameListType } from "@/types/enums"
 import prisma from "@/lib/prisma"
 
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             code: "INVALID_USERNAME",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             },
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             code: "USER_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -143,7 +142,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const totalGames = allUserEntries.length
     const totalHours = allUserEntries.reduce(
       (sum, entry) => sum + (entry.hoursPlayed || 0),
-      0
+      0,
     )
     const ratingsWithValues = allUserEntries
       .map((entry) => entry.rating)
@@ -164,12 +163,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       GameListType.DROPPED,
     ]
 
-    const listCounts = statusOrder.reduce((acc, statusType) => {
-      acc[statusType] = allUserEntries.filter(
-        (entry) => entry.status === statusType
-      ).length
-      return acc
-    }, {} as Record<GameListType, number>)
+    const listCounts = statusOrder.reduce(
+      (acc, statusType) => {
+        acc[statusType] = allUserEntries.filter(
+          (entry) => entry.status === statusType,
+        ).length
+        return acc
+      },
+      {} as Record<GameListType, number>,
+    )
 
     // Build complete metadata object (used in both single and all list responses)
     const completeMetadata = {
@@ -199,7 +201,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // Handle all lists request - group entries by status
       const groupedEntries = statusOrder.map((statusType) => {
         const entriesForStatus = gameEntries.filter(
-          (entry) => entry.status === statusType
+          (entry) => entry.status === statusType,
         )
 
         return {
@@ -227,7 +229,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           code: "INTERNAL_ERROR",
         },
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -247,7 +249,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "INVALID_USERNAME",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -260,12 +262,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "INVALID_ENTRY_ID",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     // Check authentication using NextAuth session
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -276,7 +278,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "UNAUTHORIZED",
           },
         },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -294,7 +296,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "USER_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -308,7 +310,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "FORBIDDEN",
           },
         },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
@@ -337,7 +339,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "ENTRY_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -366,7 +368,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           username: authenticatedUser.username,
         },
       },
-      { status: 200 }
+      { status: 200 },
     )
   } catch (error: unknown) {
     console.error("Error deleting game entry:", error)
@@ -385,7 +387,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "ENTRY_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -396,7 +398,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           code: "INTERNAL_ERROR",
         },
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

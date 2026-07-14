@@ -1,7 +1,6 @@
 // app/api/gameslist/entries/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/auth"
 import { GameListType } from "@/types/enums"
 import prisma from "@/lib/prisma"
 
@@ -39,7 +38,7 @@ const getStatusLabel = (status: GameListType): string => {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication using NextAuth session
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.email) {
       return NextResponse.json(
         {
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
             code: "UNAUTHORIZED",
           },
         },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
             code: "USER_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
             code: "MISSING_TITLE",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -99,7 +98,7 @@ export async function POST(request: NextRequest) {
             code: "MISSING_RAWG_GAME_ID",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -119,7 +118,7 @@ export async function POST(request: NextRequest) {
             code: "GAME_ALREADY_EXISTS",
           },
         },
-        { status: 409 }
+        { status: 409 },
       )
     }
 
@@ -135,7 +134,7 @@ export async function POST(request: NextRequest) {
     if ("status" in body) {
       const statusValue = parseInt(body.status)
       const validStatuses = Object.values(GameListType).filter(
-        (value) => typeof value === "number"
+        (value) => typeof value === "number",
       ) as number[]
 
       if (isNaN(statusValue) || !validStatuses.includes(statusValue)) {
@@ -143,12 +142,12 @@ export async function POST(request: NextRequest) {
           {
             error: {
               message: `Invalid status. Valid values are: ${validStatuses.join(
-                ", "
+                ", ",
               )}`,
               code: "INVALID_STATUS",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       gameData.status = statusValue as GameListType
@@ -167,7 +166,7 @@ export async function POST(request: NextRequest) {
               code: "INVALID_RATING",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       gameData.rating = body.rating
@@ -182,7 +181,7 @@ export async function POST(request: NextRequest) {
               code: "INVALID_REVIEW",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       gameData.review = body.review
@@ -201,7 +200,7 @@ export async function POST(request: NextRequest) {
               code: "INVALID_HOURS_PLAYED",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       gameData.hoursPlayed = body.hoursPlayed
@@ -229,7 +228,7 @@ export async function POST(request: NextRequest) {
                 code: "INVALID_DATE_FORMAT",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -242,7 +241,7 @@ export async function POST(request: NextRequest) {
                 code: "INVALID_DATE",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -267,7 +266,7 @@ export async function POST(request: NextRequest) {
                 code: "INVALID_DATE_FORMAT",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -280,7 +279,7 @@ export async function POST(request: NextRequest) {
                 code: "INVALID_DATE",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -326,7 +325,7 @@ export async function POST(request: NextRequest) {
           username: newEntry.user.username,
         },
       },
-      { status: 201 }
+      { status: 201 },
     )
   } catch (error: unknown) {
     console.error("Error creating game entry:", error)
@@ -345,7 +344,7 @@ export async function POST(request: NextRequest) {
             code: "GAME_ALREADY_EXISTS",
           },
         },
-        { status: 409 }
+        { status: 409 },
       )
     }
 
@@ -356,7 +355,7 @@ export async function POST(request: NextRequest) {
           code: "INTERNAL_ERROR",
         },
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

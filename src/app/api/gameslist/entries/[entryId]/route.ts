@@ -1,9 +1,8 @@
 // app/api/gameslist/entries/[entryId]/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
 import { GameListType } from "@/types/enums"
 import prisma from "@/lib/prisma"
+import { auth } from "@/auth"
 
 interface RouteParams {
   params: Promise<{
@@ -51,11 +50,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             code: "INVALID_ENTRY_ID",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.email) {
       return NextResponse.json(
         {
@@ -65,7 +64,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             code: "UNAUTHORIZED",
           },
         },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -82,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             code: "USER_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -99,7 +98,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             code: "ENTRY_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -114,7 +113,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       // Get all numeric values from the enum
       const validStatuses = Object.values(GameListType).filter(
-        (value) => typeof value === "number"
+        (value) => typeof value === "number",
       ) as number[]
 
       if (isNaN(statusValue) || !validStatuses.includes(statusValue)) {
@@ -122,12 +121,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           {
             error: {
               message: `Invalid status. Valid values are: ${validStatuses.join(
-                ", "
+                ", ",
               )}`,
               code: "INVALID_STATUS",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
 
@@ -147,7 +146,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               code: "INVALID_RATING",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       updates.rating = body.rating
@@ -162,7 +161,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               code: "INVALID_REVIEW",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       updates.review = body.review
@@ -181,7 +180,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               code: "INVALID_HOURS_PLAYED",
             },
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
       updates.hoursPlayed = body.hoursPlayed
@@ -212,7 +211,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 code: "INVALID_DATE_FORMAT",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -226,7 +225,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 code: "INVALID_DATE",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -254,7 +253,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 code: "INVALID_DATE_FORMAT",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -267,7 +266,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 code: "INVALID_DATE",
               },
             },
-            { status: 400 }
+            { status: 400 },
           )
         }
 
@@ -287,7 +286,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             code: "NO_FIELDS_TO_UPDATE",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -302,13 +301,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         message: `Successfully updated game entry "${updatedEntry.title}".`,
         updatedEntry,
       },
-      { status: 200 }
+      { status: 200 },
     )
   } catch (error: unknown) {
     console.error("Error updating game entry:", error)
     return NextResponse.json(
       { error: { message: "Internal server error", code: "INTERNAL_ERROR" } },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -326,12 +325,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "INVALID_ENTRY_ID",
           },
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     // Check authentication using NextAuth session
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -342,7 +341,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "UNAUTHORIZED",
           },
         },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -360,7 +359,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "USER_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -396,7 +395,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "ENTRY_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -428,7 +427,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           username: gameEntry.user.username,
         },
       },
-      { status: 200 }
+      { status: 200 },
     )
   } catch (error: unknown) {
     console.error("Error deleting game entry:", error)
@@ -448,7 +447,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             code: "ENTRY_NOT_FOUND",
           },
         },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -459,7 +458,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           code: "INTERNAL_ERROR",
         },
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
