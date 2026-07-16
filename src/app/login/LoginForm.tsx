@@ -1,55 +1,27 @@
 // app/login/LoginForm.tsx
 "use client"
 
-import { useState, FormEvent } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useActionState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { authenticate } from "./actions"
 
 export default function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams.get("registered")
+  const success = registered
+    ? "Account created successfully! Please sign in."
+    : ""
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(
-    registered ? "Account created successfully! Please sign in." : ""
+  const [errorMessage, formAction, isPending] = useActionState(
+    authenticate,
+    undefined,
   )
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setSuccess("")
-
-    try {
-      const result = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      })
-
-      if (result?.error) {
-        setError("Invalid email or password")
-        setLoading(false)
-        return
-      }
-
-      router.push("/dashboard")
-    } catch (error) {
-      setError("Something went wrong. Please try again.")
-      console.error("Login error:", error)
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="w-full max-w-md space-y-8">
       <div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-300">
+        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
           Sign in to your account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -86,7 +58,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+      <form className="mt-8 space-y-6" action={formAction}>
         <div className="-space-y-px rounded-md shadow-sm">
           <div>
             <label htmlFor="email" className="sr-only">
@@ -98,10 +70,8 @@ export default function LoginForm() {
               type="email"
               autoComplete="email"
               required
-              className="relative block w-full rounded-t-md border-0 py-1.5 text-gray-300 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+              className="relative block w-full rounded-t-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
               placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
@@ -114,15 +84,13 @@ export default function LoginForm() {
               type="password"
               autoComplete="current-password"
               required
-              className="relative block w-full rounded-b-md border-0 py-1.5 text-gray-300 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+              className="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
               placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
         </div>
 
-        {error && (
+        {errorMessage && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -139,7 +107,7 @@ export default function LoginForm() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-sm text-red-700">{errorMessage}</p>
               </div>
             </div>
           </div>
@@ -155,7 +123,7 @@ export default function LoginForm() {
             />
             <label
               htmlFor="remember-me"
-              className="ml-2 block text-sm text-gray-300"
+              className="ml-2 block text-sm text-gray-900"
             >
               Remember me
             </label>
@@ -164,7 +132,7 @@ export default function LoginForm() {
           <div className="text-sm">
             <Link
               href="/forgot-password"
-              className="font-medium text-blue-300 hover:text-blue-500"
+              className="font-medium text-blue-600 hover:text-blue-500"
             >
               Forgot your password?
             </Link>
@@ -174,10 +142,10 @@ export default function LoginForm() {
         <div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isPending}
             className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {isPending ? "Signing in..." : "Sign in"}
           </button>
         </div>
       </form>
