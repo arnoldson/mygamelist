@@ -1,15 +1,14 @@
-"use client"
-
-import React from "react"
+// components/Navbar.tsx
 import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
-import { Gamepad2, Search, User, LogOut, List } from "lucide-react"
+import { Gamepad2, Search, User, List } from "lucide-react"
+import { auth } from "@/auth"
+import NavbarSignOutButton from "./NavbarSignOutButton"
 
-export default function Navbar() {
-  const { data: session, status } = useSession()
+export default async function Navbar() {
+  const session = await auth()
 
   return (
-    <nav className="relative z-50 bg-gray-900 border-b border-gray-700">
+    <nav className="relative z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
@@ -26,7 +25,7 @@ export default function Navbar() {
             {!session?.user && (
               <Link
                 href="/games/search"
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-800"
+                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
               >
                 <Search className="w-4 h-4" />
                 <span className="hidden sm:inline">Search</span>
@@ -34,32 +33,26 @@ export default function Navbar() {
             )}
 
             {/* Conditional Auth Links */}
-            {status === "loading" ? (
-              // Loading state
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-8 bg-gray-700 rounded animate-pulse"></div>
-                <div className="w-20 h-8 bg-gray-700 rounded animate-pulse"></div>
-              </div>
-            ) : session?.user ? (
+            {session?.user ? (
               // Authenticated user
               <div className="flex items-center gap-4">
                 <Link
                   href="/games/search"
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-800"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
                 >
                   <Search className="w-4 h-4" />
                   <span className="hidden sm:inline">Search</span>
                 </Link>
                 <Link
                   href={`/gameslist/${session.user.username}`}
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-800"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
                 >
                   <List className="w-4 h-4" />
                   <span className="hidden sm:inline">My List</span>
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-800"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">Dashboard</span>
@@ -67,21 +60,14 @@ export default function Navbar() {
                 <div className="text-gray-300 text-sm hidden md:block">
                   Welcome, {session.user.username || session.user.email}
                 </div>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="flex items-center gap-2 text-gray-300 hover:text-red-400 transition-colors px-3 py-2 rounded-lg hover:bg-red-900 font-medium"
-                  title="Sign out"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
+                <NavbarSignOutButton />
               </div>
             ) : (
               // Unauthenticated user
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-gray-800 font-medium"
+                  className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 font-medium"
                 >
                   Login
                 </Link>

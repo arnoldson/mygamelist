@@ -9,9 +9,12 @@ import { authenticate } from "./actions"
 export default function LoginForm() {
   const searchParams = useSearchParams()
   const registered = searchParams.get("registered")
+  const reset = searchParams.get("reset")
   const success = registered
     ? "Account created successfully! Please sign in."
-    : ""
+    : reset
+      ? "Password reset successfully! Please sign in."
+      : ""
 
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
