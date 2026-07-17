@@ -3,7 +3,16 @@ import { getToken } from "next-auth/jwt"
 import { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    // getToken() has to guess whether the session cookie was set with the
+    // __Secure- prefix (used over HTTPS). Behind Vercel's proxy, the
+    // request Next.js sees internally doesn't reliably reflect the
+    // original protocol, so leaving this to auto-detect can make it look
+    // for the wrong cookie name and always come back empty in production.
+    secureCookie: process.env.NODE_ENV === "production",
+  })
   const isAuthenticated = !!token
 
   // Define protected routes
