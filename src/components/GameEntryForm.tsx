@@ -71,51 +71,51 @@ interface FormErrors {
   submit?: string
 }
 
-// Status configuration
+// Status configuration (dark theme: translucent tints on a near-black surface)
 const STATUS_CONFIG: Record<
   GameListType,
   {
     label: string
-    color: string
+    dot: string
     textColor: string
-    bgLight: string
+    bgTint: string
     borderColor: string
   }
 > = {
   [GameListType.PLAYING]: {
     label: "Currently Playing",
-    color: "bg-green-500",
-    textColor: "text-green-700",
-    bgLight: "bg-green-50",
-    borderColor: "border-green-200",
+    dot: "bg-green-400",
+    textColor: "text-green-400",
+    bgTint: "bg-green-500/10",
+    borderColor: "border-green-500/30",
   },
   [GameListType.PLAN_TO_PLAY]: {
     label: "Plan to Play",
-    color: "bg-blue-500",
-    textColor: "text-blue-700",
-    bgLight: "bg-blue-50",
-    borderColor: "border-blue-200",
+    dot: "bg-blue-400",
+    textColor: "text-blue-400",
+    bgTint: "bg-blue-500/10",
+    borderColor: "border-blue-500/30",
   },
   [GameListType.COMPLETED]: {
     label: "Completed",
-    color: "bg-purple-500",
-    textColor: "text-purple-700",
-    bgLight: "bg-purple-50",
-    borderColor: "border-purple-200",
+    dot: "bg-purple-400",
+    textColor: "text-purple-400",
+    bgTint: "bg-purple-500/10",
+    borderColor: "border-purple-500/30",
   },
   [GameListType.ON_HOLD]: {
     label: "On Hold",
-    color: "bg-yellow-500",
-    textColor: "text-yellow-700",
-    bgLight: "bg-yellow-50",
-    borderColor: "border-yellow-200",
+    dot: "bg-yellow-400",
+    textColor: "text-yellow-400",
+    bgTint: "bg-yellow-500/10",
+    borderColor: "border-yellow-500/30",
   },
   [GameListType.DROPPED]: {
     label: "Dropped",
-    color: "bg-red-500",
-    textColor: "text-red-700",
-    bgLight: "bg-red-50",
-    borderColor: "border-red-200",
+    dot: "bg-red-400",
+    textColor: "text-red-400",
+    bgTint: "bg-red-500/10",
+    borderColor: "border-red-500/30",
   },
 } as const
 
@@ -168,7 +168,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
   // Handle input changes
   const handleInputChange = <K extends keyof FormData>(
     field: K,
-    value: FormData[K]
+    value: FormData[K],
   ): void => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear field-specific errors
@@ -208,7 +208,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
 
   // Handle form submission
   const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     e.preventDefault()
 
@@ -242,7 +242,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
     } catch (error) {
       console.error(
         `Error ${isEditMode ? "saving" : "creating"} game entry:`,
-        error
+        error,
       )
       setErrors({
         submit: `Failed to ${
@@ -286,7 +286,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
   // Render star rating input
   const renderStarRating = () => (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-300">
         Rating (0-10)
       </label>
       <div className="flex items-center space-x-2">
@@ -298,29 +298,29 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
               onClick={() => handleInputChange("rating", i + 1)}
               className={`w-6 h-6 transition-colors ${
                 i < formData.rating
-                  ? "text-yellow-400 hover:text-yellow-500"
-                  : "text-gray-300 hover:text-gray-400"
+                  ? "text-yellow-400 hover:text-yellow-300 drop-shadow-[0_0_4px_rgba(250,204,21,0.5)]"
+                  : "text-gray-600 hover:text-gray-500"
               }`}
             >
               <Star className="w-full h-full fill-current" />
             </button>
           ))}
         </div>
-        <span className="text-sm font-medium text-gray-600">
+        <span className="text-sm font-medium text-gray-300">
           {formData.rating}/10
         </span>
         {formData.rating > 0 && (
           <button
             type="button"
             onClick={() => handleInputChange("rating", 0)}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
+            className="text-xs text-gray-400 hover:text-white underline"
           >
             Clear
           </button>
         )}
       </div>
       {errors.rating && (
-        <p className="text-sm text-red-600 flex items-center">
+        <p className="text-sm text-red-400 flex items-center">
           <AlertCircle className="w-4 h-4 mr-1" />
           {errors.rating}
         </p>
@@ -333,14 +333,14 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Game Title Display */}
       {showTitle && (
-        <div className="flex items-center space-x-3 pb-4 border-b border-gray-200">
-          <Gamepad2 className="w-6 h-6 text-blue-500" />
+        <div className="flex items-center space-x-3 pb-4 border-b border-white/10">
+          <Gamepad2 className="w-6 h-6 text-purple-400" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-white">
               {gameEntry.title}
             </h3>
             {!isEditMode && (
-              <p className="text-sm text-gray-500">Adding to your library</p>
+              <p className="text-sm text-gray-400">Adding to your library</p>
             )}
           </div>
         </div>
@@ -348,7 +348,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
 
       {/* Status Selection */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-300">
           Status
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -363,12 +363,12 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
                 onClick={() => handleInputChange("status", statusValue)}
                 className={`p-3 rounded-lg border-2 transition-all text-left ${
                   isSelected
-                    ? `${config.bgLight} ${config.borderColor} ${config.textColor}`
-                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                    ? `${config.bgTint} ${config.borderColor} ${config.textColor}`
+                    : "bg-white/5 border-white/10 text-gray-300 hover:border-white/20 hover:bg-white/10"
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${config.color}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${config.dot}`}></div>
                   <span className="font-medium">{config.label}</span>
                 </div>
               </button>
@@ -384,12 +384,12 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       <div className="space-y-2">
         <label
           htmlFor="hoursPlayed"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-gray-300"
         >
           Hours Played
         </label>
         <div className="relative">
-          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="number"
             id="hoursPlayed"
@@ -399,12 +399,12 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
             onChange={(e) =>
               handleInputChange("hoursPlayed", parseFloat(e.target.value) || 0)
             }
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
             placeholder="0"
           />
         </div>
         {errors.hoursPlayed && (
-          <p className="text-sm text-red-600 flex items-center">
+          <p className="text-sm text-red-400 flex items-center">
             <AlertCircle className="w-4 h-4 mr-1" />
             {errors.hoursPlayed}
           </p>
@@ -415,18 +415,18 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       <div className="space-y-2">
         <label
           htmlFor="startedAt"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-gray-300"
         >
           Started Date
         </label>
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="date"
             id="startedAt"
             value={formData.startedAt}
             onChange={(e) => handleInputChange("startedAt", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none [color-scheme:dark]"
           />
         </div>
       </div>
@@ -435,25 +435,25 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       <div className="space-y-2">
         <label
           htmlFor="completedAt"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-gray-300"
         >
           Completion Date
           {formData.status === GameListType.COMPLETED && (
-            <span className="text-red-500 ml-1">*</span>
+            <span className="text-red-400 ml-1">*</span>
           )}
         </label>
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="date"
             id="completedAt"
             value={formData.completedAt}
             onChange={(e) => handleInputChange("completedAt", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none [color-scheme:dark]"
           />
         </div>
         {errors.completedAt && (
-          <p className="text-sm text-red-600 flex items-center">
+          <p className="text-sm text-red-400 flex items-center">
             <AlertCircle className="w-4 h-4 mr-1" />
             {errors.completedAt}
           </p>
@@ -464,19 +464,19 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       <div className="space-y-2">
         <label
           htmlFor="review"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-gray-300"
         >
           Review / Notes
         </label>
         <div className="relative">
-          <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
           <textarea
             id="review"
             rows={4}
             maxLength={1000}
             value={formData.review}
             onChange={(e) => handleInputChange("review", e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-700 placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
             placeholder="Write your thoughts about this game..."
           />
         </div>
@@ -487,8 +487,8 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
 
       {/* Submit Error */}
       {errors.submit && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600 flex items-center">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <p className="text-sm text-red-400 flex items-center">
             <AlertCircle className="w-4 h-4 mr-2" />
             {errors.submit}
           </p>
@@ -496,19 +496,19 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       )}
 
       {/* Form Actions */}
-      <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-end space-x-3 pt-4 border-t border-white/10">
         <button
           type="button"
           onClick={handleCancel}
           disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-gray-300 bg-white/5 border border-white/10 rounded-md hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting || (isEditMode && !hasChanges)}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 border border-transparent rounded-md hover:from-purple-500 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-purple-500 transition-colors disabled:opacity-50 flex items-center space-x-2"
         >
           {isSubmitting ? (
             <>
@@ -537,16 +537,14 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
   // Return as modal
   if (isModal) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {modalTitle}
-            </h2>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-900 border border-white/10 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center p-6 border-b border-white/10">
+            <h2 className="text-lg font-semibold text-white">{modalTitle}</h2>
             <button
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              className="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>
@@ -559,10 +557,10 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
 
   // Return as full page
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">{pageTitle}</h1>
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg shadow-sm p-6">
+          <h1 className="text-2xl font-bold text-white mb-6">{pageTitle}</h1>
           {formContent}
         </div>
       </div>

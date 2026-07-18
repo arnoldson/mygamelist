@@ -35,13 +35,12 @@ export default async function GamesListPage({
     notFound()
   }
 
+  // GamesListContent and GamesListSkeleton each own their full-page
+  // dark background and max-w-7xl container, so this page just wires
+  // up routing/validation and gets out of the way.
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Suspense fallback={<GamesListSkeleton />}>
-          <GamesListContent userName={userName} status={status} />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<GamesListSkeleton />}>
+      <GamesListContent userName={userName} status={status} />
+    </Suspense>
   )
 }
