@@ -1,8 +1,20 @@
 import { test, expect } from "@playwright/test"
+import { MOCK_SEARCH_RESPONSE } from "./fixtures/rawgSearchResponse"
 
 test('should search for "zelda" and display valid GameCards', async ({
   page,
 }) => {
+  // Intercept the RAWG search call with a fixed fixture instead of hitting
+  // the real API. This test verifies our own UI renders search results
+  // correctly, not RAWG's uptime or response latency.
+  await page.route("**/api/games/search**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_SEARCH_RESPONSE),
+    }),
+  )
+
   // Navigate to the games search page
   await page.goto("/games/search")
 
@@ -17,7 +29,7 @@ test('should search for "zelda" and display valid GameCards', async ({
   await page.locator('button[type="submit"]').click()
 
   // Wait for search results to load
-  await expect(page.locator("text=Found")).toBeVisible({ timeout: 10000 })
+  await expect(page.locator("text=Found")).toBeVisible()
 
   // Check that at least one game card is displayed
   const gameCards = page.locator('[data-testid="game-card"]')
@@ -41,7 +53,7 @@ test('should search for "zelda" and display valid GameCards', async ({
   // Check that the card has either an image or a fallback icon
   const hasImage = await firstCard.locator("img").isVisible()
   const hasFallbackIcon = await firstCard
-    .locator('[data-lucide="gamepad"]')
+    .locator("svg.lucide-gamepad")
     .isVisible()
   expect(hasImage || hasFallbackIcon).toBe(true)
 

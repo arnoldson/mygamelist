@@ -73,15 +73,15 @@ const config: PlaywrightTestConfig = {
     //   name: "webkit",
     //   use: { ...devices["Desktop Safari"] },
     // },
-    // // Test against mobile viewports
-    // {
-    //   name: "mobile-chrome",
-    //   use: { ...devices["Pixel 5"] },
-    // },
-    // {
-    //   name: "mobile-safari",
-    //   use: { ...devices["iPhone 12"] },
-    // },
+    // Test against mobile viewports
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "mobile-safari",
+      use: { ...devices["iPhone 12"] },
+    },
   ],
 
   // globalSetup: path.resolve(testDir, "./global-setup.ts"),

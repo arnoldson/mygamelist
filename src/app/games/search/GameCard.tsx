@@ -117,8 +117,8 @@ export default function GameCard({
                 game.metacritic >= 75
                   ? "bg-green-600"
                   : game.metacritic >= 50
-                  ? "bg-yellow-600"
-                  : "bg-red-600"
+                    ? "bg-yellow-600"
+                    : "bg-red-600"
               } text-white`}
             >
               {game.metacritic}
@@ -135,7 +135,7 @@ export default function GameCard({
             {session?.user ? (
               <button
                 onClick={handleAddClick}
-                className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 transform hover:scale-110"
+                className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 transform hover:scale-110"
                 title="Add to your list"
               >
                 <Plus className="w-4 h-4" />
@@ -143,7 +143,7 @@ export default function GameCard({
             ) : (
               <button
                 onClick={handleAddClick}
-                className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 text-xs font-medium"
+                className="px-3 py-1.5 md:py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 text-xs font-medium"
                 title="Sign in to add to list"
               >
                 Sign in
@@ -154,10 +154,10 @@ export default function GameCard({
 
         {/* Overlay for non-authenticated users - Only show if game is not in list */}
         {showAddButton && !session?.user && !game.status && (
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-t-xl flex items-center justify-center">
+          <div className="absolute inset-0 bg-black bg-opacity-0 md:group-hover:bg-opacity-20 transition-all duration-200 rounded-t-xl flex items-center justify-center">
             <button
               onClick={handleAddClick}
-              className="opacity-0 group-hover:opacity-100 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 text-sm font-medium shadow-lg"
+              className="opacity-0 md:group-hover:opacity-100 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 text-sm font-medium shadow-lg"
             >
               Sign in to Add
             </button>

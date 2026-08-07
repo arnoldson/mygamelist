@@ -33,7 +33,7 @@ export default function ForgotPasswordForm() {
             type="email"
             autoComplete="email"
             required
-            className="relative block w-full rounded-md border-0 bg-white/5 backdrop-blur-md py-1.5 text-white ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-purple-500 sm:text-sm sm:leading-6 px-3"
+            className="relative block w-full rounded-md border-0 bg-white/5 backdrop-blur-md py-3 text-base text-white ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-purple-500 sm:py-1.5 sm:text-sm sm:leading-6 px-3"
             placeholder="Email address"
           />
         </div>
@@ -48,7 +48,7 @@ export default function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="group relative flex w-full justify-center rounded-md bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2 text-sm font-semibold text-white hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative flex w-full justify-center rounded-md bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-3 sm:py-2 text-sm font-semibold text-white hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? "Sending..." : "Send reset link"}
           </button>

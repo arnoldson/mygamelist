@@ -27,7 +27,7 @@ test.describe("Login Test", () => {
     await page.click('button[type="submit"]')
 
     // Should show error and stay on login page
-    await expect(page.locator(".bg-red-50")).toBeVisible()
+    await expect(page.getByText("Invalid email or password")).toBeVisible()
     await expect(page).toHaveURL(/.*login/)
   })
 })

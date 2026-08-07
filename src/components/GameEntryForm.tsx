@@ -289,14 +289,14 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
       <label className="block text-sm font-medium text-gray-300">
         Rating (0-10)
       </label>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
         <div className="flex items-center space-x-1">
           {[...Array(10)].map((_, i: number) => (
             <button
               key={i}
               type="button"
               onClick={() => handleInputChange("rating", i + 1)}
-              className={`w-6 h-6 transition-colors ${
+              className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
                 i < formData.rating
                   ? "text-yellow-400 hover:text-yellow-300 drop-shadow-[0_0_4px_rgba(250,204,21,0.5)]"
                   : "text-gray-600 hover:text-gray-500"
@@ -557,7 +557,7 @@ const GameEntryForm: React.FC<GameEntryFormProps> = ({
 
   // Return as full page
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg shadow-sm p-6">
           <h1 className="text-2xl font-bold text-white mb-6">{pageTitle}</h1>
