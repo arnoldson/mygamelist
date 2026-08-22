@@ -2,9 +2,11 @@ name: Supabase Keep-Alive
 
 on:
   schedule:
-    # Runs every 3 days at 09:00 UTC — well under Supabase's free-tier
-    # inactivity window, cheap on Actions minutes.
-    - cron: "0 9 */3 * *"
+    # Runs every 2 days at 09:00 UTC. A plain SELECT 1 every 3 days wasn't
+    # enough to register as "activity" on Supabase's free-tier heuristic
+    # (project paused despite a run succeeding 3 days prior) — this does a
+    # real write/delete instead, and on a tighter cadence.
+    - cron: "0 9 */2 * *"
   workflow_dispatch: {} # allows manual trigger from the Actions tab
 
 jobs:
@@ -14,8 +16,22 @@ jobs:
       - name: Install postgresql-client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Ping Supabase via direct Postgres connection
+      - name: Keep-alive via insert + delete
         env:
           DATABASE_URL: ${{ secrets.KEEPALIVE_DATABASE_URL }}
         run: |
-          psql "$DATABASE_URL" -c "SELECT 1;" -v ON_ERROR_STOP=1
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          -- Dedicated, app-unrelated table so this never touches real data.
+          -- Underscore-prefixed and outside schema.prisma on purpose: Prisma
+          -- migrate/db push won't know about it and won't manage it.
+          CREATE TABLE IF NOT EXISTS _keepalive_ping (
+            id SERIAL PRIMARY KEY,
+            pinged_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+
+          INSERT INTO _keepalive_ping (pinged_at) VALUES (now());
+
+          -- Keep the table from growing forever; also gives Supabase a
+          -- delete to see, not just an insert.
+          DELETE FROM _keepalive_ping WHERE pinged_at < now() - interval '1 day';
+          SQL
