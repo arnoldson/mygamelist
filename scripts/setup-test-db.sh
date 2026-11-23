@@ -74,7 +74,7 @@ main() {
     if command -v npx > /dev/null 2>&1; then
     
         echo "Pushing database schema..."
-        DATABASE_URL='postgresql://postgres:postgres@localhost:5433/mygamelist_test' npx prisma db push
+        DATABASE_URL='postgresql://postgres:postgres@localhost:5433/mygamelist_test' DIRECT_URL='postgresql://postgres:postgres@localhost:5433/mygamelist_test' npx prisma db push
 
         echo "Generating Prisma client..."
         npx prisma generate
