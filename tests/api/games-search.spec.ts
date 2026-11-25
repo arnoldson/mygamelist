@@ -23,4 +23,9 @@ test('should return games when searching for "zelda"', async ({ request }) => {
   expect(firstGame).toHaveProperty("rating")
   expect(typeof firstGame.name).toBe("string")
   expect(typeof firstGame.id).toBe("number")
+
+  // RAWG's pagination URLs include our API key; it must never reach the client
+  expect(data.next).toBeTruthy()
+  expect(new URL(data.next).searchParams.has("key")).toBe(false)
+  expect(JSON.stringify(data)).not.toMatch(/[?&]key=/)
 })

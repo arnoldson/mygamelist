@@ -11,6 +11,15 @@ if (!RAWG_API_KEY) {
   console.warn("RAWG_API_KEY environment variable is not set")
 }
 
+// RAWG's pagination URLs echo back our API key, so strip it before the
+// response reaches the browser.
+function stripApiKey(url: string | null): string | null {
+  if (!url) return url
+  const parsed = new URL(url)
+  parsed.searchParams.delete("key")
+  return parsed.toString()
+}
+
 async function getUserGameEntries(userId: string, rawgGameIds: number[]) {
   const gameEntries = await prisma.gameEntry.findMany({
     where: {
@@ -120,6 +129,8 @@ export async function GET(request: NextRequest) {
     }
 
     const data: RAWGSearchResponse = await response.json()
+    data.next = stripApiKey(data.next)
+    data.previous = stripApiKey(data.previous)
 
     // Augment the results with user's game entries if needed
     const enrichedResults = await augmentSearchResults(data)
