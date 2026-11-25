@@ -536,6 +536,17 @@ export default function GamesListContent({
     })
   }
 
+  // Started/completed are calendar dates stored as midnight UTC, so format
+  // them in UTC; local time would show the previous day west of UTC.
+  const formatCalendarDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    })
+  }
+
   // Render stars for rating
   const renderStars = (rating: number) => {
     return (
@@ -801,7 +812,7 @@ export default function GamesListContent({
                               </span>
                               <span className="text-sm text-gray-200 flex items-center">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {formatDate(entry.startedAt)}
+                                {formatCalendarDate(entry.startedAt)}
                               </span>
                             </div>
                           )}
@@ -813,7 +824,7 @@ export default function GamesListContent({
                               </span>
                               <span className="text-sm text-green-400 flex items-center font-medium">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {formatDate(entry.completedAt)}
+                                {formatCalendarDate(entry.completedAt)}
                               </span>
                             </div>
                           )}

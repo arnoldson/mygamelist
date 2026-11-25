@@ -19,10 +19,13 @@ export default function GameCard({
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "TBA"
+    // RAWG gives a bare YYYY-MM-DD, which parses as midnight UTC; format in
+    // UTC so it doesn't show the previous day west of UTC.
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     })
   }
 
